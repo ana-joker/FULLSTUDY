@@ -1,0 +1,8 @@
+{
+  "name": "Interactive Study & Quiz Hub",
+  "description": "An all-in-one hub to study with an AI tutor and generate interactive quizzes.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "prompt": ""
+}

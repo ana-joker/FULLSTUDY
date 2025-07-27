@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Study & Quiz Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600&family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
+  <script>
+    // Required for pdf.js to work correctly from esm.sh
+    window.pdfjsWorker = "https://esm.sh/pdfjs-dist@4.4.168/build/pdf.worker.mjs";
+  </script>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^0.14.0",
+    "pdfjs-dist": "https://esm.sh/pdfjs-dist@4.4.168",
+    "mammoth": "https://esm.sh/mammoth@^1.8.0",
+    "path": "https://esm.sh/path@^0.12.7",
+    "vite": "https://esm.sh/vite@^7.0.6"
+  }
+}
+</script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div class="main-container">
+
+    <!-- HOME PAGE (NEW) -->
+    <div id="home-page" class="page active">
+        <header class="app-header">
+            <div class="app-header-actions">
+              <button class="general-settings-trigger header-btn icon-btn" aria-label="Settings">⚙️</button>
+            </div>
+            <div class="app-header-content">
+                <h1 data-i18n-key="mainAppTitle">Study & Quiz Hub</h1>
+                <p data-i18n-key="mainAppSubtitle">Your personal AI-powered learning environment.</p>
+            </div>
+            <div class="app-header-actions">
+                <span style="width: 50px;"></span> <!-- Spacer -->
+            </div>
+        </header>
+        <div class="hub-selection-container">
+            <div class="hub-card" id="navigate-to-chat">
+                <div class="hub-card-icon">💬</div>
+                <h2 data-i18n-key="studyHubTitle">Study Hub</h2>
+                <p data-i18n-key="studyHubDescription">Start a conversation with your AI tutor, ask questions, and explore topics in depth.</p>
+            </div>
+            <div class="hub-card" id="navigate-to-quiz">
+                 <div class="hub-card-icon">❓</div>
+                <h2 data-i18n-key="quizHubTitle">Quiz Hub</h2>
+                <p data-i18n-key="quizHubDescription">Generate custom quizzes from text, documents, or images to test your knowledge.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- CHAT PAGE (NEW) -->
+    <div id="chat-page" class="page">
+        <div id="chat-history-sidebar">
+            <div class="chat-sidebar-header">
+              <button class="header-btn back-to-home-btn" data-i18n-key="backToHome">Back to Home</button>
+              <button class="general-settings-trigger icon-btn" aria-label="Settings">⚙️</button>
+            </div>
+            <button id="new-chat-btn" class="new-chat-button" data-i18n-key="newChat">New Chat +</button>
+            <div id="chat-list"></div>
+        </div>
+        <div id="chat-main-content">
+            <div id="chat-main-header">
+                <div id="system-instruction-container">
+                    <div id="system-instruction-header">
+                        <span data-i18n-key="systemInstruction">System Instruction</span>
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div id="system-instruction-body">
+                        <textarea id="system-instruction-input" placeholder="e.g., You are a helpful assistant specialized in quantum physics..."></textarea>
+                    </div>
+                </div>
+                <div id="chat-header-actions">
+                    <button id="chat-settings-trigger" class="icon-btn" aria-label="Chat Settings">⚙️</button>
+                </div>
+            </div>
+            <div id="chat-messages">
+                <!-- Chat messages will be dynamically inserted here -->
+                <div id="chat-welcome-message">
+                    <div class="hub-card-icon">💬</div>
+                    <h2 data-i18n-key="chatWelcomeTitle">How can I help you learn today?</h2>
+                    <p data-i18n-key="chatWelcomeDescription">Ask a question, upload a file, or send a voice note to get started.</p>
+                </div>
+            </div>
+             <div id="chat-loader" style="display: none;">
+                <div class="dot-flashing"></div>
+            </div>
+            <div id="chat-input-container">
+                <div id="chat-file-preview-container"></div>
+                <div class="chat-input-row">
+                    <textarea id="chat-input" rows="1" placeholder="Type a message, or upload a file..."></textarea>
+                    <label for="chat-file-input" class="chat-action-btn" aria-label="Attach file">📎</label>
+                    <input type="file" id="chat-file-input" class="visually-hidden" accept=".txt,.md,.pdf,.docx,image/*">
+                    <button id="record-btn" class="chat-action-btn" aria-label="Record voice">🎤</button>
+                    <button id="send-btn" class="chat-action-btn" aria-label="Send message">➤</button>
+                </div>
+                 <div id="recording-ui" style="display: none;">
+                    <span id="recording-timer">00:00</span>
+                    <button id="stop-recording-btn" data-i18n-key="stopRecording">Stop Recording</button>
+                 </div>
+            </div>
+        </div>
+         <!-- CHAT SETTINGS POPOVER -->
+        <div id="chat-settings-popover" class="popover" style="display: none;">
+            <div class="popover-content">
+                <div class="setting-section">
+                    <h3 data-i18n-key="modelParameters">Model Parameters</h3>
+                    <div class="setting-option">
+                        <label for="temperature-slider">Temperature: <span id="temperature-value">0.5</span></label>
+                        <input type="range" id="temperature-slider" min="0" max="1" step="0.1" value="0.5" class="slider-input">
+                    </div>
+                    <div class="setting-option">
+                        <label for="topk-slider">Top-K: <span id="topk-value">32</span></label>
+                        <input type="range" id="topk-slider" min="1" max="100" step="1" value="32" class="slider-input">
+                    </div>
+                     <div class="setting-option">
+                        <label for="topp-slider">Top-P: <span id="topp-value">0.95</span></label>
+                        <input type="range" id="topp-slider" min="0" max="1" step="0.05" value="0.95" class="slider-input">
+                    </div>
+                     <div class="setting-option">
+                        <label for="max-tokens-slider">Max Output Tokens: <span id="max-tokens-value">8192</span></label>
+                        <input type="range" id="max-tokens-slider" min="128" max="100000" step="512" value="8192" class="slider-input">
+                    </div>
+                </div>
+                 <div class="setting-section">
+                    <h3 data-i18n-key="settingsChatBehavior">Behavior</h3>
+                     <div class="toggle-option">
+                        <label for="auto-create-title-toggle" data-i18n-key="autoCreateTitle">Auto Create Chat Titles</label>
+                        <label class="switch">
+                          <input type="checkbox" id="auto-create-title-toggle">
+                          <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-option">
+                        <label for="streaming-output-toggle" data-i18n-key="streamingOutput">Streaming Output</label>
+                        <label class="switch">
+                          <input type="checkbox" id="streaming-output-toggle" checked>
+                          <span class="slider round"></span>
+                        </label>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- QUIZ CREATOR PAGE -->
+    <div id="quiz-creator-page" class="page">
+        <header class="app-header">
+           <div class="app-header-actions">
+            <button class="header-btn back-to-home-btn" data-i18n-key="backToHome">Back</button>
+          </div>
+          <div class="app-header-content">
+              <h1 data-i18n-key="appTitle">Interactive Quiz Generator</h1>
+              <p data-i18n-key="appSubtitle">Describe the quiz you want, or upload a document and let AI build it for you instantly.</p>
+          </div>
+          <div class="app-header-actions">
+            <button class="general-settings-trigger header-btn icon-btn" aria-label="Settings">⚙️</button>
+            <button id="recall-hub-btn" class="header-btn" style="display: none;">🧠 <span id="recall-count-badge" class="badge"></span></button>
+            <button id="quiz-history-btn" class="header-btn" data-i18n-key="quizHistory"></button>
+          </div>
+        </header>
+        
+        <div class="prompt-container">
+          <textarea id="prompt-input" rows="3" placeholder="e.g., 'Create a quiz on the main topics...'"></textarea>
+          
+          <div class="file-inputs-container">
+            <div class="file-input-area">
+              <input type="file" id="file-input" class="visually-hidden" accept=".txt,.md,.pdf,.docx">
+              <label for="file-input" class="button-like-label" data-i18n-key="uploadDocument">Upload Document</label>
+              <div id="file-name-display" class="file-name-display" style="display: none;">
+                <span id="file-name"></span>
+                <button id="remove-file-btn" class="remove-file-btn">&times;</button>
+              </div>
+              <small class="supported-formats">Supported: .txt, .md, .pdf, .docx</small>
+            </div>
+            <div class="file-input-area">
+                <input type="file" id="image-input" class="visually-hidden" accept="image/*">
+                <label for="image-input" class="button-like-label" data-i18n-key="uploadImage">Upload Image</label>
+                <div id="image-name-display" class="file-name-display" style="display: none;">
+                  <span id="image-name"></span>
+                  <button id="remove-image-btn" class="remove-file-btn">&times;</button>
+                </div>
+                <small class="supported-formats">Supported: images (jpg, png, etc.)</small>
+            </div>
+          </div>
+          
+           <div class="learning-options-container">
+             <div class="input-group">
+                <label id="knowledge-level-label" data-i18n-key="knowledgeLevel"></label>
+                <div class="radio-button-group" id="knowledge-level-selector">
+                    <label><input type="radio" name="knowledge-level" value="Beginner" checked> <span data-i18n-key="beginner"></span></label>
+                    <label><input type="radio" name="knowledge-level" value="Intermediate"> <span data-i18n-key="intermediate"></span></label>
+                    <label><input type="radio" name="knowledge-level" value="Advanced"> <span data-i18n-key="advanced"></span></label>
+                </div>
+            </div>
+             <div class="input-group">
+                <label id="learning-goal-label" data-i18n-key="learningGoal"></label>
+                <div class="radio-button-group" id="learning-goal-selector">
+                    <label><input type="radio" name="learning-goal" value="Understand Concepts" checked> <span data-i18n-key="understandConcepts"></span></label>
+                    <label><input type="radio" name="learning-goal" value="Apply Information"> <span data-i18n-key="applyInfo"></span></label>
+                    <label><input type="radio" name="learning-goal" value="Learning"> <span data-i18n-key="learning"></span></label>
+                </div>
+            </div>
+          </div>
+    
+          <div class="quiz-customization-container">
+            <div class="input-group">
+                <label for="num-questions-input" id="num-questions-label" data-i18n-key="numQuestions"></label>
+                <input type="number" id="num-questions-input" min="1" max="20" value="5">
+            </div>
+            <div class="input-group">
+                <label id="difficulty-label" data-i18n-key="difficulty"></label>
+                <div class="difficulty-selector">
+                    <button class="difficulty-btn active" data-difficulty="Mixed" data-i18n-key="mixed"></button>
+                    <button class="difficulty-btn" data-difficulty="Easy" data-i18n-key="easy"></button>
+                    <button class="difficulty-btn" data-difficulty="Medium" data-i18n-key="mediumDifficulty"></button>
+                    <button class="difficulty-btn" data-difficulty="Hard" data-i18n-key="hard"></button>
+                </div>
+            </div>
+            <div class="input-group">
+              <label for="subject-input" data-i18n-key="subjectLabel">Subject/Field (Optional)</label>
+              <input type="text" id="subject-input" placeholder="e.g., Medical Physics, WW2 History">
+            </div>
+            <div class="input-group">
+                <label id="explanation-lang-label" data-i18n-key="explanationLanguage">Explanation Language</label>
+                <div class="difficulty-selector" id="explanation-lang-selector">
+                    <button class="difficulty-btn active" data-lang="Arabic">Arabic</button>
+                    <button class="difficulty-btn" data-lang="English">English</button>
+                </div>
+            </div>
+             <div class="input-group">
+                <label id="quiz-lang-label" data-i18n-key="quizLanguage"></label>
+                <div class="difficulty-selector" id="quiz-lang-selector">
+                    <button class="difficulty-btn" data-lang="Arabic">Arabic</button>
+                    <button class="difficulty-btn active" data-lang="English">English</button>
+                </div>
+            </div>
+            <div class="input-group full-width-group">
+              <label id="question-types-label" data-i18n-key="questionTypes"></label>
+              <div id="question-types-selector" class="checkbox-grid">
+                  <label><input type="checkbox" name="question-type" value="MCQ" checked> <span data-i18n-key="qMcq"></span></label>
+                  <label><input type="checkbox" name="question-type" value="TrueFalse" checked> <span data-i18n-key="qTf"></span></label>
+                  <label><input type="checkbox" name="question-type" value="ShortAnswer" checked> <span data-i18n-key="qSa"></span></label>
+                  <label><input type="checkbox" name="question-type" value="Ordering" checked> <span data-i18n-key="qOrd"></span></label>
+                  <label><input type="checkbox" name="question-type" value="Matching" checked> <span data-i18n-key="qMatch"></span></label>
+              </div>
+            </div>
+          </div>
+    
+          <button id="generate-btn" data-i18n-key="generateQuiz">Generate Quiz</button>
+          <div id="loader-container" style="display: none;">
+            <div id="loader" class="loader"></div>
+            <button id="cancel-btn" class="secondary-btn" data-i18n-key="cancel">Cancel</button>
+          </div>
+          <p id="error-message" class="error-message" style="display: none;"></p>
+        </div>
+    </div>
+
+    <!-- QUIZ FLOW CONTAINER -->
+    <div id="quiz-flow-container" class="page">
+      <div id="landing-page" class="page">
+        <h1 id="quiz-title"></h1>
+        <div id="pre-quiz-summary-container" class="pre-quiz-summary" style="display: none;">
+            <h3 data-i18n-key="summaryHeader"></h3>
+            <div id="summary-content"></div>
+        </div>
+        <hr>
+        <p id="landing-message" data-i18n-key="landingMessage"></p>
+        <button id="start-quiz-btn" data-i18n-key="startQuiz"></button>
+      </div>
+
+      <div id="quiz-page" class="page">
+        <div class="quiz-header">
+           <div id="progress-bar-container">
+              <div id="progress-bar"></div>
+           </div>
+           <div id="timer-container">
+             <span class="timer-icon">⏱️</span> Time: <span id="timer">00:00</span>
+           </div>
+        </div>
+        <div id="questions-container"></div>
+        <div id="quiz-nav-container"></div>
+      </div>
+
+      <div id="results-page" class="page">
+        <h2 id="results-header" data-i18n-key="resultsHeader"></h2>
+        <p><span id="results-score-label" data-i18n-key="resultsScoreLabel"></span> <span id="score"></span> / <span id="total-questions"></span></p>
+        <p><span id="results-percentage-label" data-i18n-key="resultsPercentageLabel"></span> <span id="percentage"></span>%</p>
+        <p><strong>Time Taken:</strong> <span id="time-taken"></span></p>
+        <p id="study-advice"></p>
+        <div class="button-group">
+            <button id="review-answers-btn" data-i18n-key="reviewAnswers"></button>
+            <button id="retake-quiz-btn" data-i18n-key="retakeQuiz"></button>
+            <button id="export-anki-btn" class="secondary-btn" data-i18n-key="exportForAnki"></button>
+            <button id="generate-different-quiz-btn" class="secondary-btn" data-i18n-key="generateDifferentQuiz"></button>
+            <button id="new-quiz-btn" data-i18n-key="createNewQuiz"></button>
+        </div>
+      </div>
+
+      <div id="review-page" class="page">
+        <h2 id="review-header" data-i18n-key="reviewHeader"></h2>
+        <div id="review-container"></div>
+        <div class="button-group">
+            <button id="back-to-results-btn" data-i18n-key="backToResults"></button>
+            <button id="generate-different-quiz-btn-from-review" class="secondary-btn" data-i18n-key="generateDifferentQuiz"></button>
+            <button id="new-quiz-btn-from-review" data-i18n-key="createNewQuiz"></button>
+        </div>
+      </div>
+
+      <div id="history-page" class="page">
+        <h2 id="history-header" data-i18n-key="historyHeader"></h2>
+        <div id="history-container"></div>
+        <div class="button-group">
+          <button id="back-to-creator-btn" data-i18n-key="backToCreator"></button>
+        </div>
+      </div>
+      
+      <div id="spaced-repetition-page" class="page">
+        <h2 data-i18n-key="recallHeader"></h2>
+        <div id="recall-session-container" style="display: none;">
+            <div id="recall-progress"></div>
+            <div class="flashcard">
+                <div id="recall-question"></div>
+                <div id="recall-answer" style="display: none;"></div>
+            </div>
+            <div id="recall-nav-container" class="button-group">
+                <button id="recall-show-answer-btn"></button>
+                <div id="recall-feedback-btns" style="display: none;" class="button-group">
+                    <button id="recall-forgot-btn" class="recall-feedback-btn recall-forgot" data-perf="forgot"></button>
+                    <button id="recall-good-btn" class="recall-feedback-btn recall-good" data-perf="good"></button>
+                    <button id="recall-easy-btn" class="recall-feedback-btn recall-easy" data-perf="easy"></button>
+                </div>
+            </div>
+        </div>
+        <div id="recall-complete-message" style="display: none;" class="text-center">
+            <h3 data-i18n-key="recallCompleteHeader"></h3>
+            <p data-i18n-key="recallCompleteText"></p>
+            <div class="button-group">
+                <button id="recall-back-to-creator-btn"></button>
+            </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="resume-prompt-container" class="modal-container" style="display: none;">
+      <div class="modal-content">
+          <h2 id="resume-header" data-i18n-key="resumeHeader"></h2>
+          <p id="resume-text" data-i18n-key="resumeText"></p>
+          <div class="button-group">
+              <button id="resume-yes-btn" data-i18n-key="resumeYes"></button>
+              <button id="resume-no-btn" class="secondary-btn" data-i18n-key="resumeNo"></button>
+          </div>
+      </div>
+  </div>
+  
+  <div id="general-settings-modal" class="modal-container" style="display: none;">
+    <div class="modal-content">
+        <h2 data-i18n-key="settings"></h2>
+        <div class="setting-section">
+            <h3 data-i18n-key="appearance"></h3>
+            <div class="setting-option">
+                <label data-i18n-key="interfaceLanguage"></label>
+                <div class="button-group" id="language-selector">
+                    <button class="setting-btn" data-lang="ar">العربية</button>
+                    <button class="setting-btn" data-lang="en">English</button>
+                </div>
+            </div>
+            <div class="setting-option">
+                <label data-i18n-key="theme"></label>
+                <div class="button-group" id="theme-selector">
+                    <button class="setting-btn" data-theme="light" data-i18n-key="lightTheme"></button>
+                    <button class="setting-btn" data-theme="dark" data-i18n-key="darkTheme"></button>
+                </div>
+            </div>
+            <div class="setting-option">
+                <label data-i18n-key="fontSize"></label>
+                <div class="button-group" id="font-size-selector">
+                    <button class="setting-btn font-size-btn" data-size="small" data-i18n-key="small"></button>
+                    <button class="setting-btn font-size-btn active" data-size="medium" data-i18n-key="medium"></button>
+                    <button class="setting-btn font-size-btn" data-size="large" data-i18n-key="large"></button>
+                </div>
+            </div>
+            <div class="setting-option">
+                 <label data-i18n-key="startupPage"></label>
+                 <div class="radio-button-group" id="startup-page-selector">
+                    <label><input type="radio" name="startup-page" value="home" checked> <span data-i18n-key="startupHomePage"></span></label>
+                    <label><input type="radio" name="startup-page" value="last-session"> <span data-i18n-key="startupLastSession"></span></label>
+                 </div>
+            </div>
+        </div>
+         <div class="setting-section">
+            <h3 data-i18n-key="dataManagement">Data Management</h3>
+             <div class="button-group">
+                 <button id="export-data-btn" class="secondary-btn" data-i18n-key="exportData"></button>
+             </div>
+             <p class="setting-description" data-i18n-key="dataBackupDescription"></p>
+        </div>
+
+        <button id="settings-close-btn" data-i18n-key="close"></button>
+    </div>
+  </div>
+
+  <div id="learn-more-modal" class="modal-container" style="display: none;">
+    <div class="modal-content">
+        <h2 id="learn-more-header"></h2>
+        <div id="learn-more-loader" class="loader" style="display: none;"></div>
+        <div id="learn-more-error" class="error-message" style="display: none;"></div>
+        <div id="learn-more-content">
+            <!-- Content will be injected by JS -->
+        </div>
+        <button id="learn-more-close-btn" class="secondary-btn"></button>
+    </div>
+  </div>
+
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

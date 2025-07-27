@@ -1,0 +1,6 @@
+{
+  "name": "Interactive Quiz Generator",
+  "description": "Generate and take interactive quizzes on any topic using AI.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
