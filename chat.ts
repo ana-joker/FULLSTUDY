@@ -10,37 +10,35 @@ import { appSettings, saveSettings } from "./settings";
 // --- CONSTANTS ---
 const CHAT_HISTORY_KEY = 'chatHistory';
 
-// --- DOM ELEMENTS ---
-const chatPage = document.getElementById('chat-page');
-const chatListEl = document.getElementById('chat-list');
-const newChatBtn = document.getElementById('new-chat-btn');
-const systemInstructionContainer = document.getElementById('system-instruction-container');
-const systemInstructionInput = document.getElementById('system-instruction-input') as HTMLTextAreaElement;
-const chatMessagesEl = document.getElementById('chat-messages');
-const chatInput = document.getElementById('chat-input') as HTMLTextAreaElement;
-const sendBtn = document.getElementById('send-btn') as HTMLButtonElement;
-const chatFileInput = document.getElementById('chat-file-input') as HTMLInputElement;
-const chatFilePreviewContainer = document.getElementById('chat-file-preview-container');
-const chatLoader = document.getElementById('chat-loader');
-const recordBtn = document.getElementById('record-btn') as HTMLButtonElement;
-const stopRecordingBtn = document.getElementById('stop-recording-btn') as HTMLButtonElement;
-const recordingUi = document.getElementById('recording-ui');
-const recordingTimerEl = document.getElementById('recording-timer');
-const welcomeMessage = document.getElementById('chat-welcome-message');
-const chatSettingsTrigger = document.getElementById('chat-settings-trigger');
-const chatSettingsPopover = document.getElementById('chat-settings-popover');
-
-// Chat Settings Popover Elements
-const temperatureSlider = document.getElementById('temperature-slider') as HTMLInputElement | null;
-const temperatureValue = document.getElementById('temperature-value') as HTMLSpanElement | null;
-const topkSlider = document.getElementById('topk-slider') as HTMLInputElement | null;
-const topkValue = document.getElementById('topk-value') as HTMLSpanElement | null;
-const toppSlider = document.getElementById('topp-slider') as HTMLInputElement | null;
-const toppValue = document.getElementById('topp-value') as HTMLSpanElement | null;
-const maxTokensSlider = document.getElementById('max-tokens-slider') as HTMLInputElement | null;
-const maxTokensValue = document.getElementById('max-tokens-value') as HTMLSpanElement | null;
-const autoCreateTitleToggle = document.getElementById('auto-create-title-toggle') as HTMLInputElement;
-const streamingOutputToggle = document.getElementById('streaming-output-toggle') as HTMLInputElement;
+// --- DOM ELEMENTS (declare only) ---
+let chatPage: HTMLElement | null;
+let chatListEl: HTMLElement | null;
+let newChatBtn: HTMLElement | null;
+let systemInstructionContainer: HTMLElement | null;
+let systemInstructionInput: HTMLTextAreaElement;
+let chatMessagesEl: HTMLElement | null;
+let chatInput: HTMLTextAreaElement;
+let sendBtn: HTMLButtonElement;
+let chatFileInput: HTMLInputElement;
+let chatFilePreviewContainer: HTMLElement | null;
+let chatLoader: HTMLElement | null;
+let recordBtn: HTMLButtonElement;
+let stopRecordingBtn: HTMLButtonElement;
+let recordingUi: HTMLElement | null;
+let recordingTimerEl: HTMLElement | null;
+let welcomeMessage: HTMLElement | null;
+let chatSettingsTrigger: HTMLElement | null;
+let chatSettingsPopover: HTMLElement | null;
+let temperatureSlider: HTMLInputElement | null;
+let temperatureValue: HTMLSpanElement | null;
+let topkSlider: HTMLInputElement | null;
+let topkValue: HTMLSpanElement | null;
+let toppSlider: HTMLInputElement | null;
+let toppValue: HTMLSpanElement | null;
+let maxTokensSlider: HTMLInputElement | null;
+let maxTokensValue: HTMLSpanElement | null;
+let autoCreateTitleToggle: HTMLInputElement;
+let streamingOutputToggle: HTMLInputElement;
 
 
 // --- CHAT STATE ---
@@ -142,7 +140,7 @@ function startNewChat() {
             chatMessagesEl.appendChild(welcomeMessage.cloneNode(true));
         }
     }
-    systemInstructionInput.value = '';
+    if(systemInstructionInput) systemInstructionInput.value = '';
     clearAttachments();
     renderChatList(); // To remove 'active' class from previous session
 }
@@ -164,7 +162,7 @@ function loadChat(sessionId: string) {
         session.history.forEach(renderMessage);
     }
     
-    systemInstructionInput.value = session.systemInstruction || '';
+    if(systemInstructionInput) systemInstructionInput.value = session.systemInstruction || '';
     
     chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
     renderChatList();
@@ -549,9 +547,11 @@ function initChatSettings() {
     // Add event listeners
     chatSettingsTrigger?.addEventListener('click', (e) => {
         e.stopPropagation();
-        chatSettingsPopover?.style.display === 'none' 
-            ? chatSettingsPopover.style.display = 'block'
-            : chatSettingsPopover.style.display = 'none';
+        if(chatSettingsPopover) {
+            chatSettingsPopover.style.display = chatSettingsPopover.style.display === 'none' 
+            ? 'block'
+            : 'none';
+        }
     });
 
     document.body.addEventListener('click', () => {
@@ -563,30 +563,60 @@ function initChatSettings() {
     const save = () => { saveSettings(); };
 
     temperatureSlider?.addEventListener('input', () => {
-        if (temperatureValue) temperatureValue.textContent = temperatureSlider.value;
-        appSettings.temperature = parseFloat(temperatureSlider.value);
+        if (temperatureValue && temperatureSlider) temperatureValue.textContent = temperatureSlider.value;
+        if(temperatureSlider) appSettings.temperature = parseFloat(temperatureSlider.value);
         save();
     });
     topkSlider?.addEventListener('input', () => {
-        if (topkValue) topkValue.textContent = topkSlider.value;
-        appSettings.topK = parseInt(topkSlider.value, 10);
+        if (topkValue && topkSlider) topkValue.textContent = topkSlider.value;
+        if(topkSlider) appSettings.topK = parseInt(topkSlider.value, 10);
         save();
     });
     toppSlider?.addEventListener('input', () => {
-        if (toppValue) toppValue.textContent = toppSlider.value;
-        appSettings.topP = parseFloat(toppSlider.value);
+        if (toppValue && toppSlider) toppValue.textContent = toppSlider.value;
+        if(toppSlider) appSettings.topP = parseFloat(toppSlider.value);
         save();
     });
     maxTokensSlider?.addEventListener('input', () => {
-        if (maxTokensValue) maxTokensValue.textContent = maxTokensSlider.value;
-        appSettings.maxOutputTokens = parseInt(maxTokensSlider.value, 10);
+        if (maxTokensValue && maxTokensSlider) maxTokensValue.textContent = maxTokensSlider.value;
+        if(maxTokensSlider) appSettings.maxOutputTokens = parseInt(maxTokensSlider.value, 10);
         save();
     });
-    autoCreateTitleToggle?.addEventListener('change', () => { appSettings.autoCreateTitle = autoCreateTitleToggle.checked; save(); });
-    streamingOutputToggle?.addEventListener('change', () => { appSettings.streamingOutput = streamingOutputToggle.checked; save(); });
+    autoCreateTitleToggle?.addEventListener('change', () => { if(autoCreateTitleToggle) appSettings.autoCreateTitle = autoCreateTitleToggle.checked; save(); });
+    streamingOutputToggle?.addEventListener('change', () => { if(streamingOutputToggle) appSettings.streamingOutput = streamingOutputToggle.checked; save(); });
 }
 
 export function initChatModule() {
+    // --- INITIALIZE DOM ELEMENTS ---
+    chatPage = document.getElementById('chat-page');
+    chatListEl = document.getElementById('chat-list');
+    newChatBtn = document.getElementById('new-chat-btn');
+    systemInstructionContainer = document.getElementById('system-instruction-container');
+    systemInstructionInput = document.getElementById('system-instruction-input') as HTMLTextAreaElement;
+    chatMessagesEl = document.getElementById('chat-messages');
+    chatInput = document.getElementById('chat-input') as HTMLTextAreaElement;
+    sendBtn = document.getElementById('send-btn') as HTMLButtonElement;
+    chatFileInput = document.getElementById('chat-file-input') as HTMLInputElement;
+    chatFilePreviewContainer = document.getElementById('chat-file-preview-container');
+    chatLoader = document.getElementById('chat-loader');
+    recordBtn = document.getElementById('record-btn') as HTMLButtonElement;
+    stopRecordingBtn = document.getElementById('stop-recording-btn') as HTMLButtonElement;
+    recordingUi = document.getElementById('recording-ui');
+    recordingTimerEl = document.getElementById('recording-timer');
+    welcomeMessage = document.getElementById('chat-welcome-message');
+    chatSettingsTrigger = document.getElementById('chat-settings-trigger');
+    chatSettingsPopover = document.getElementById('chat-settings-popover');
+    temperatureSlider = document.getElementById('temperature-slider') as HTMLInputElement | null;
+    temperatureValue = document.getElementById('temperature-value') as HTMLSpanElement | null;
+    topkSlider = document.getElementById('topk-slider') as HTMLInputElement | null;
+    topkValue = document.getElementById('topk-value') as HTMLSpanElement | null;
+    toppSlider = document.getElementById('topp-slider') as HTMLInputElement | null;
+    toppValue = document.getElementById('topp-value') as HTMLSpanElement | null;
+    maxTokensSlider = document.getElementById('max-tokens-slider') as HTMLInputElement | null;
+    maxTokensValue = document.getElementById('max-tokens-value') as HTMLSpanElement | null;
+    autoCreateTitleToggle = document.getElementById('auto-create-title-toggle') as HTMLInputElement;
+    streamingOutputToggle = document.getElementById('streaming-output-toggle') as HTMLInputElement;
+
     loadChatHistory();
     initChatSettings();
     
@@ -596,9 +626,11 @@ export function initChatModule() {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
     chatInput?.addEventListener('input', () => {
-        chatInput.style.height = 'auto';
-        chatInput.style.height = `${chatInput.scrollHeight}px`;
-        sendBtn.disabled = chatInput.value.trim().length === 0 && attachedFiles.length === 0;
+        if(chatInput) {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = `${chatInput.scrollHeight}px`;
+        }
+        if(sendBtn && chatInput) sendBtn.disabled = chatInput.value.trim().length === 0 && attachedFiles.length === 0;
     });
 
     chatFileInput?.addEventListener('change', handleFileAttachment);
@@ -606,7 +638,7 @@ export function initChatModule() {
     chatListEl?.addEventListener('click', (e) => {
         const target = (e.target as HTMLElement).closest('.chat-item-action-btn');
         if (target) {
-            handleChatItemAction(e);
+            handleChatItemAction(e as MouseEvent);
         }
     });
     

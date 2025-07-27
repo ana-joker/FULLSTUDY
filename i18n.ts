@@ -104,6 +104,8 @@ const uiStringsEn = {
     // -- General Settings
     appearance: "Appearance",
     interfaceLanguage: "Interface Language",
+    languageArabic: "العربية",
+    languageEnglish: "English",
     theme: "Theme",
     lightTheme: "Light",
     darkTheme: "Dark",
@@ -114,15 +116,28 @@ const uiStringsEn = {
     startupPage: "Startup Page",
     startupHomePage: "Home Page",
     startupLastSession: "Last Active Session",
+    apiKeyManagement: "API Key Management",
+    securityWarningTitle: "Important Security Note",
+    securityWarningText: "Your API key is stored only in your browser's local storage. It is never sent to any server. However, be cautious when sharing your screen or device.",
+    saveApiKey: "Save",
+    clearApiKey: "Clear",
+    apiKeySaved: "API Key saved and verified.",
+    apiKeyCleared: "API Key cleared.",
+    apiKeyInvalid: "API Key is not valid. Please check and save again.",
+    apiKeyMissing: "API Key not set. Please add it in the settings to use AI features.",
     dataManagement: "Data Management",
     dataBackupDescription: "Export your settings and all history (chats, quizzes) to a single JSON file.",
     exportData: "Export All Data",
-    apiKeyMissing: "API Key not set. Please add it in your .env file or deployment configuration.",
     // -- Chat Settings
     modelParameters: "Model Parameters",
     settingsChatBehavior: "Behavior",
     autoCreateTitle: "Auto Create Chat Titles",
     streamingOutput: "Streaming Output",
+    // -- Quiz Settings
+    learningContext: "Learning Context",
+    quizConfiguration: "Quiz Configuration",
+    languageSettings: "Language",
+
 };
 
 const uiStringsAr = {
@@ -229,6 +244,8 @@ const uiStringsAr = {
     // -- General Settings
     appearance: "المظهر",
     interfaceLanguage: "لغة الواجهة",
+    languageArabic: "العربية",
+    languageEnglish: "English",
     theme: "السمة",
     lightTheme: "فاتح",
     darkTheme: "داكن",
@@ -239,20 +256,32 @@ const uiStringsAr = {
     startupPage: "صفحة بدء التشغيل",
     startupHomePage: "الصفحة الرئيسية",
     startupLastSession: "آخر جلسة نشطة",
+    apiKeyManagement: "إدارة مفتاح API",
+    securityWarningTitle: "ملاحظة أمنية هامة",
+    securityWarningText: "يتم تخزين مفتاح API الخاص بك في التخزين المحلي لمتصفحك فقط. لا يتم إرساله أبدًا إلى أي خادم. ومع ذلك، كن حذرًا عند مشاركة شاشتك أو جهازك.",
+    saveApiKey: "حفظ",
+    clearApiKey: "مسح",
+    apiKeySaved: "تم حفظ مفتاح API والتحقق منه.",
+    apiKeyCleared: "تم مسح مفتاح API.",
+    apiKeyInvalid: "مفتاح API غير صالح. يرجى التحقق منه وحفظه مرة أخرى.",
+    apiKeyMissing: "لم يتم تعيين مفتاح API. يرجى إضافته في الإعدادات لاستخدام ميزات الذكاء الاصطناعي.",
     dataManagement: "إدارة البيانات",
     dataBackupDescription: "تصدير الإعدادات وجميع السجلات (المحادثات، الاختبارات) إلى ملف JSON واحد.",
     exportData: "تصدير كل البيانات",
-    apiKeyMissing: "لم يتم تعيين مفتاح API. يرجى إضافته في ملف .env أو في إعدادات النشر.",
     // -- Chat Settings
     modelParameters: "معلمات النموذج",
     settingsChatBehavior: "سلوك المحادثة",
     autoCreateTitle: "إنشاء عناوين تلقائي",
     streamingOutput: "إخراج متدفق",
+    // -- Quiz Settings
+    learningContext: "سياق التعلم",
+    quizConfiguration: "إعدادات الاختبار",
+    languageSettings: "اللغة",
 };
 
 
 export const i18nDictionary = { en: uiStringsEn, ar: uiStringsAr };
-export let currentStrings = i18nDictionary.ar; // Default to Arabic
+export let currentStrings: typeof uiStringsEn = i18nDictionary.ar; // Default to Arabic
 
 export function applyLanguage(lang: 'ar' | 'en') {
     currentStrings = i18nDictionary[lang];
@@ -265,27 +294,22 @@ export function initializeUiText() {
     document.querySelectorAll<HTMLElement>('[data-i18n-key]').forEach(el => {
         const key = el.dataset.i18nKey as keyof typeof uiStringsEn;
         if (key && currentStrings[key]) {
-            // For buttons in a button group, they might just have the key and need textContent
-            // For other elements, they might have child nodes that need preserving.
-            // A simple check to see if it's a button or has no element children.
-            if (el.tagName === 'BUTTON' || el.children.length === 0) {
-                 el.textContent = currentStrings[key];
-            } else {
-                // If it has children, find the first text node and change it.
-                // This is a bit fragile but works for cases like <label><input><span>text</span></label>
-                const textNode = Array.from(el.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent?.trim());
-                if(textNode) {
-                    textNode.textContent = ` ${currentStrings[key]} `;
-                }
-            }
+            // This is a simple replacement. For elements with complex children,
+            // you might need a more sophisticated approach.
+            el.textContent = currentStrings[key];
         }
     });
 
-    // Handle elements that might not have the data attribute, like buttons in modals
-    const recallShowAnswerBtn = document.getElementById('recall-show-answer-btn');
-    if (recallShowAnswerBtn) recallShowAnswerBtn.textContent = currentStrings.showAnswer;
-    const historyContainer = document.getElementById('history-container');
-    if (historyContainer && historyContainer.querySelector('.no-history-message')) {
-        historyContainer.querySelector('.no-history-message')!.textContent = currentStrings.noHistory;
-    }
+    // Update placeholders separately
+    const promptInput = document.getElementById('prompt-input') as HTMLTextAreaElement;
+    if (promptInput) promptInput.placeholder = "e.g., 'Create a quiz on the main topics...'"; // This is hard to i18n without more context
+    
+    // For radio buttons and checkboxes where only part of the text changes
+     document.querySelectorAll<HTMLElement>('span[data-i18n-key]').forEach(el => {
+        const key = el.dataset.i18nKey as keyof typeof uiStringsEn;
+        if (key && currentStrings[key]) {
+            el.textContent = currentStrings[key];
+        }
+    });
+
 }

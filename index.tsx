@@ -9,18 +9,27 @@ import { initSettingsModule, loadSettings, appSettings } from './settings';
 import { initializeUiText } from './i18n';
 import { showPage, showModal } from './ui';
 
-// --- DOM ELEMENT SELECTORS ---
-const navigateToChatBtn = document.getElementById('navigate-to-chat');
-const navigateToQuizBtn = document.getElementById('navigate-to-quiz');
-const backToHomeBtns = document.querySelectorAll('.back-to-home-btn');
-const resumePromptContainer = document.getElementById('resume-prompt-container');
-const resumeYesBtn = document.getElementById('resume-yes-btn');
-const resumeNoBtn = document.getElementById('resume-no-btn');
+// --- DOM ELEMENT SELECTORS (will be initialized in main) ---
+let navigateToChatBtn: HTMLElement | null;
+let navigateToQuizBtn: HTMLElement | null;
+let backToHomeBtns: NodeListOf<Element>;
+let resumePromptContainer: HTMLElement | null;
+let resumeYesBtn: HTMLElement | null;
+let resumeNoBtn: HTMLElement | null;
+
 
 /**
  * Initializes the entire application.
  */
 function main() {
+    // --- INITIALIZE DOM ELEMENT SELECTORS ---
+    navigateToChatBtn = document.getElementById('navigate-to-chat');
+    navigateToQuizBtn = document.getElementById('navigate-to-quiz');
+    backToHomeBtns = document.querySelectorAll('.back-to-home-btn');
+    resumePromptContainer = document.getElementById('resume-prompt-container');
+    resumeYesBtn = document.getElementById('resume-yes-btn');
+    resumeNoBtn = document.getElementById('resume-no-btn');
+    
     // 1. Load settings and apply them (theme, language, etc.)
     loadSettings();
     initializeUiText();
@@ -46,7 +55,7 @@ function main() {
     // 4. Check for a quiz to resume or a chat session to load
     const savedQuizState = loadQuizState();
     if (savedQuizState) {
-        showModal('resume-prompt-container');
+        if(resumePromptContainer) showModal('resume-prompt-container');
     } else if (appSettings.startupPage === 'last-session') {
         if (!loadLatestChat()) {
             // if no chat to load, default to home
@@ -62,12 +71,12 @@ function main() {
         if (savedState) {
             resumeQuiz(savedState);
         }
-        showModal('resume-prompt-container', false);
+        if(resumePromptContainer) showModal('resume-prompt-container', false);
     });
 
     resumeNoBtn?.addEventListener('click', () => {
         clearQuizState();
-        showModal('resume-prompt-container', false);
+        if(resumePromptContainer) showModal('resume-prompt-container', false);
     });
 }
 

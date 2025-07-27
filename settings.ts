@@ -1,7 +1,8 @@
-import { applyLanguage, currentStrings, initializeUiText } from './i18n';
-import { initializeAi, getAiInstance, setAiInstance } from './api';
+import { applyLanguage, currentStrings } from './i18n';
+import { initializeAi, setAiInstance } from './api';
 import { showModal } from './ui';
 import { chatSessions } from './chat';
+import { GoogleGenAI } from '@google/genai';
 
 // --- TYPES ---
 export type AppSettings = {
@@ -23,22 +24,20 @@ export type AppSettings = {
     showTimestamps: boolean;
 };
 
-// --- DOM SELECTORS ---
-const body = document.body;
-const mainContainer = document.querySelector('.main-container') as HTMLDivElement | null;
-const settingsModal = document.getElementById('general-settings-modal');
-const settingsCloseBtn = document.getElementById('settings-close-btn');
-
-// General
-const languageSelector = document.getElementById('language-selector');
-const themeSelector = document.getElementById('theme-selector');
-const fontSizeSelector = document.getElementById('font-size-selector');
-const startupPageSelector = document.getElementById('startup-page-selector');
-const apiKeyInput = document.getElementById('api-key-input') as HTMLInputElement | null;
-const saveApiKeyBtn = document.getElementById('save-api-key-btn');
-const clearApiKeyBtn = document.getElementById('clear-api-key-btn');
-const apiKeyStatus = document.getElementById('api-key-status') as HTMLParagraphElement | null;
-const exportDataBtn = document.getElementById('export-data-btn');
+// --- DOM SELECTORS (declared, but not initialized) ---
+let body: HTMLElement;
+let mainContainer: HTMLDivElement | null;
+let settingsModal: HTMLElement | null;
+let settingsCloseBtn: HTMLElement | null;
+let languageSelector: HTMLElement | null;
+let themeSelector: HTMLElement | null;
+let fontSizeSelector: HTMLElement | null;
+let startupPageSelector: HTMLElement | null;
+let apiKeyInput: HTMLInputElement | null;
+let saveApiKeyBtn: HTMLElement | null;
+let clearApiKeyBtn: HTMLElement | null;
+let apiKeyStatus: HTMLParagraphElement | null;
+let exportDataBtn: HTMLElement | null;
 
 // --- STATE ---
 const SETTINGS_KEY = 'interactiveQuizSettings';
@@ -67,7 +66,8 @@ export function saveSettings() {
 export function loadSettings() {
     const savedSettings = localStorage.getItem(SETTINGS_KEY);
     appSettings = savedSettings ? { ...defaultSettings, ...JSON.parse(savedSettings) } : { ...defaultSettings };
-    applyAllSettings();
+    // Applying settings is now part of the init function,
+    // which runs after the DOM is ready.
 }
 
 function applyTheme(theme: 'light' | 'dark') {
@@ -109,9 +109,35 @@ function applyAllSettings() {
 
     if (appSettings.apiKey && apiKeyInput) { apiKeyInput.value = appSettings.apiKey; }
     
-    // The API key is not part of the UI but needs to be initialized
-    // Quiz/Chat specific settings are applied within their own modules
     initializeAi(appSettings.apiKey);
+}
+
+async function verifyAndSaveApiKey(key: string) {
+    if (!apiKeyStatus || !apiKeyInput) return;
+
+    apiKeyStatus.textContent = 'Verifying...';
+    apiKeyStatus.className = 'setting-description';
+    
+    try {
+        const tempAi = new GoogleGenAI({ apiKey: key });
+        await tempAi.models.generateContent({model: 'gemini-2.5-flash', contents: 'test'}); 
+
+        // If successful
+        appSettings.apiKey = key;
+        saveSettings();
+        setAiInstance(tempAi);
+        apiKeyStatus.textContent = currentStrings.apiKeySaved;
+        apiKeyStatus.classList.add('success');
+
+    } catch (error) {
+        console.error("API Key validation failed", error);
+        appSettings.apiKey = null;
+        saveSettings();
+        setAiInstance(null);
+        if(apiKeyInput) apiKeyInput.value = '';
+        apiKeyStatus.textContent = currentStrings.apiKeyInvalid;
+        apiKeyStatus.classList.add('error');
+    }
 }
 
 function exportData() {
@@ -133,6 +159,23 @@ function exportData() {
 }
 
 export function initSettingsModule() {
+    // Initialize selectors now that the DOM is ready
+    body = document.body;
+    mainContainer = document.querySelector('.main-container');
+    settingsModal = document.getElementById('general-settings-modal');
+    settingsCloseBtn = document.getElementById('settings-close-btn');
+    languageSelector = document.getElementById('language-selector');
+    themeSelector = document.getElementById('theme-selector');
+    fontSizeSelector = document.getElementById('font-size-selector');
+    startupPageSelector = document.getElementById('startup-page-selector');
+    apiKeyInput = document.getElementById('api-key-input') as HTMLInputElement | null;
+    saveApiKeyBtn = document.getElementById('save-api-key-btn');
+    clearApiKeyBtn = document.getElementById('clear-api-key-btn');
+    apiKeyStatus = document.getElementById('api-key-status') as HTMLParagraphElement | null;
+    exportDataBtn = document.getElementById('export-data-btn');
+    
+    applyAllSettings();
+    
     const settingsTriggers = document.querySelectorAll('.general-settings-trigger');
     settingsTriggers.forEach(btn => {
         btn.addEventListener('click', () => showModal('general-settings-modal'));
@@ -150,8 +193,8 @@ export function initSettingsModule() {
             const lang = target.dataset.lang as AppSettings['language'];
             if (lang) {
                 appSettings.language = lang;
-                applyLanguage(lang); // This will also call initializeUiText
-                 languageSelector.querySelectorAll('.setting-btn').forEach(btn => {
+                applyLanguage(lang);
+                 languageSelector?.querySelectorAll('.setting-btn').forEach(btn => {
                     btn.classList.remove('active');
                     if ((btn as HTMLButtonElement).dataset.lang === lang) btn.classList.add('active');
                 });
@@ -181,4 +224,25 @@ export function initSettingsModule() {
     });
     
     exportDataBtn?.addEventListener('click', exportData);
+
+    // --- API Key Listeners ---
+    saveApiKeyBtn?.addEventListener('click', () => {
+        if (apiKeyInput) {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                verifyAndSaveApiKey(key);
+            }
+        }
+    });
+
+    clearApiKeyBtn?.addEventListener('click', () => {
+        if (apiKeyInput && apiKeyStatus) {
+            appSettings.apiKey = null;
+            saveSettings();
+            setAiInstance(null);
+            apiKeyInput.value = '';
+            apiKeyStatus.textContent = currentStrings.apiKeyCleared;
+            apiKeyStatus.className = 'setting-description success';
+        }
+    });
 }

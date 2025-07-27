@@ -1,4 +1,5 @@
 
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -19,73 +20,72 @@ const HISTORY_STORAGE_KEY = 'interactiveQuizHistory';
 const RECALL_STORAGE_KEY = 'interactiveQuizRecallDeck';
 const passPercentageThreshold = 60;
 
-// --- DOM ELEMENT SELECTORS ---
-const promptInput = document.getElementById('prompt-input') as HTMLTextAreaElement | null;
-const generateBtn = document.getElementById('generate-btn') as HTMLButtonElement | null;
-const loaderContainer = document.getElementById('loader-container') as HTMLDivElement | null;
-const cancelBtn = document.getElementById('cancel-btn') as HTMLButtonElement | null;
-const fileInput = document.getElementById('file-input') as HTMLInputElement | null;
-const fileNameDisplay = document.getElementById('file-name-display') as HTMLDivElement | null;
-const fileNameSpan = document.getElementById('file-name') as HTMLSpanElement | null;
-const removeFileBtn = document.getElementById('remove-file-btn') as HTMLButtonElement | null;
-const imageInput = document.getElementById('image-input') as HTMLInputElement | null;
-const imageNameDisplay = document.getElementById('image-name-display') as HTMLDivElement | null;
-const imageNameSpan = document.getElementById('image-name') as HTMLSpanElement | null;
-const removeImageBtn = document.getElementById('remove-image-btn') as HTMLButtonElement | null;
-const quizFlowContainer = document.getElementById('quiz-flow-container') as HTMLDivElement | null;
-const landingPage = document.getElementById('landing-page') as HTMLDivElement | null;
-const quizPage = document.getElementById('quiz-page') as HTMLDivElement | null;
-const resultsPage = document.getElementById('results-page') as HTMLDivElement | null;
-const reviewPage = document.getElementById('review-page') as HTMLDivElement | null;
-const historyPage = document.getElementById('history-page') as HTMLDivElement | null;
-const quizTitle = document.getElementById('quiz-title') as HTMLHeadingElement | null;
-const startQuizBtn = document.getElementById('start-quiz-btn') as HTMLButtonElement | null;
-const reviewAnswersBtn = document.getElementById('review-answers-btn') as HTMLButtonElement | null;
-const retakeQuizBtn = document.getElementById('retake-quiz-btn') as HTMLButtonElement | null;
-const generateDifferentQuizBtn = document.getElementById('generate-different-quiz-btn') as HTMLButtonElement | null;
-const newQuizBtn = document.getElementById('new-quiz-btn') as HTMLButtonElement | null;
-const generateDifferentQuizBtnFromReview = document.getElementById('generate-different-quiz-btn-from-review') as HTMLButtonElement | null;
-const newQuizBtnFromReview = document.getElementById('new-quiz-btn-from-review') as HTMLButtonElement | null;
-const backToResultsBtn = document.getElementById('back-to-results-btn') as HTMLButtonElement | null;
-const backToCreatorBtn = document.getElementById('back-to-creator-btn') as HTMLButtonElement | null;
-const quizHistoryBtn = document.getElementById('quiz-history-btn') as HTMLButtonElement | null;
-const questionsContainer = document.getElementById('questions-container') as HTMLDivElement | null;
-const quizNavContainer = document.getElementById('quiz-nav-container') as HTMLDivElement | null;
-const scoreSpan = document.getElementById('score') as HTMLSpanElement | null;
-const totalQuestionsSpan = document.getElementById('total-questions') as HTMLSpanElement | null;
-const percentageSpan = document.getElementById('percentage') as HTMLSpanElement | null;
-const studyAdvice = document.getElementById('study-advice') as HTMLParagraphElement | null;
-const reviewContainer = document.getElementById('review-container') as HTMLDivElement | null;
-const progressBar = document.getElementById('progress-bar') as HTMLDivElement | null;
-const historyContainer = document.getElementById('history-container') as HTMLDivElement | null;
-const numQuestionsInput = document.getElementById('num-questions-input') as HTMLInputElement | null;
-const difficultySelector = document.querySelector('.difficulty-selector') as HTMLDivElement | null;
-const subjectInput = document.getElementById('subject-input') as HTMLInputElement | null;
-const explanationLangSelector = document.getElementById('explanation-lang-selector') as HTMLDivElement | null;
-const timerEl = document.getElementById('timer') as HTMLSpanElement | null;
-const timeTakenEl = document.getElementById('time-taken') as HTMLSpanElement | null;
-const preQuizSummaryContainer = document.getElementById('pre-quiz-summary-container') as HTMLDivElement | null;
-const summaryContent = document.getElementById('summary-content') as HTMLDivElement | null;
-const quizLangSelector = document.getElementById('quiz-lang-selector') as HTMLDivElement | null;
-const exportAnkiBtn = document.getElementById('export-anki-btn') as HTMLButtonElement | null;
-const recallHubBtn = document.getElementById('recall-hub-btn') as HTMLButtonElement | null;
-const recallCountBadge = document.getElementById('recall-count-badge') as HTMLSpanElement | null;
-const spacedRepetitionPage = document.getElementById('spaced-repetition-page') as HTMLDivElement | null;
-const recallSessionContainer = document.getElementById('recall-session-container') as HTMLDivElement | null;
-const recallProgressEl = document.getElementById('recall-progress') as HTMLDivElement | null;
-const recallQuestion = document.getElementById('recall-question') as HTMLDivElement | null;
-const recallAnswer = document.getElementById('recall-answer') as HTMLDivElement | null;
-const recallNavContainer = document.getElementById('recall-nav-container') as HTMLDivElement | null;
-const recallShowAnswerBtn = document.getElementById('recall-show-answer-btn') as HTMLButtonElement | null;
-const recallFeedbackBtns = document.getElementById('recall-feedback-btns') as HTMLDivElement | null;
-const recallForgotBtn = document.getElementById('recall-forgot-btn') as HTMLButtonElement | null;
-const recallGoodBtn = document.getElementById('recall-good-btn') as HTMLButtonElement | null;
-const recallEasyBtn = document.getElementById('recall-easy-btn') as HTMLButtonElement | null;
-const recallCompleteMessage = document.getElementById('recall-complete-message') as HTMLDivElement | null;
-const recallBackToCreatorBtn = document.getElementById('recall-back-to-creator-btn') as HTMLButtonElement | null;
-const learnMoreLoader = document.getElementById('learn-more-loader');
-const learnMoreError = document.getElementById('learn-more-error');
-const learnMoreContent = document.getElementById('learn-more-content');
+// --- DOM ELEMENT SELECTORS (declare only) ---
+let promptInput: HTMLTextAreaElement | null;
+let generateBtn: HTMLButtonElement | null;
+let loaderContainer: HTMLDivElement | null;
+let cancelBtn: HTMLButtonElement | null;
+let fileInput: HTMLInputElement | null;
+let fileNameDisplay: HTMLDivElement | null;
+let fileNameSpan: HTMLSpanElement | null;
+let removeFileBtn: HTMLButtonElement | null;
+let imageInput: HTMLInputElement | null;
+let imageNameDisplay: HTMLDivElement | null;
+let imageNameSpan: HTMLSpanElement | null;
+let removeImageBtn: HTMLButtonElement | null;
+let quizFlowContainer: HTMLDivElement | null;
+let landingPage: HTMLDivElement | null;
+let quizPage: HTMLDivElement | null;
+let resultsPage: HTMLDivElement | null;
+let reviewPage: HTMLDivElement | null;
+let historyPage: HTMLDivElement | null;
+let quizTitle: HTMLHeadingElement | null;
+let startQuizBtn: HTMLButtonElement | null;
+let reviewAnswersBtn: HTMLButtonElement | null;
+let retakeQuizBtn: HTMLButtonElement | null;
+let generateDifferentQuizBtn: HTMLButtonElement | null;
+let newQuizBtn: HTMLButtonElement | null;
+let generateDifferentQuizBtnFromReview: HTMLButtonElement | null;
+let newQuizBtnFromReview: HTMLButtonElement | null;
+let backToResultsBtn: HTMLButtonElement | null;
+let backToCreatorBtn: HTMLButtonElement | null;
+let quizHistoryBtn: HTMLButtonElement | null;
+let questionsContainer: HTMLDivElement | null;
+let quizNavContainer: HTMLDivElement | null;
+let scoreSpan: HTMLSpanElement | null;
+let totalQuestionsSpan: HTMLSpanElement | null;
+let percentageSpan: HTMLSpanElement | null;
+let studyAdvice: HTMLParagraphElement | null;
+let reviewContainer: HTMLDivElement | null;
+let progressBar: HTMLDivElement | null;
+let historyContainer: HTMLDivElement | null;
+let numQuestionsInput: HTMLInputElement | null;
+let subjectInput: HTMLInputElement | null;
+let timerEl: HTMLSpanElement | null;
+let timeTakenEl: HTMLSpanElement | null;
+let preQuizSummaryContainer: HTMLDivElement | null;
+let summaryContent: HTMLDivElement | null;
+let exportAnkiBtn: HTMLButtonElement | null;
+let recallHubBtn: HTMLButtonElement | null;
+let recallCountBadge: HTMLSpanElement | null;
+let spacedRepetitionPage: HTMLDivElement | null;
+let recallSessionContainer: HTMLDivElement | null;
+let recallProgressEl: HTMLDivElement | null;
+let recallQuestion: HTMLDivElement | null;
+let recallAnswer: HTMLDivElement | null;
+let recallNavContainer: HTMLDivElement | null;
+let recallShowAnswerBtn: HTMLButtonElement | null;
+let recallFeedbackBtns: HTMLDivElement | null;
+let recallCompleteMessage: HTMLDivElement | null;
+let recallBackToCreatorBtn: HTMLButtonElement | null;
+let learnMoreLoader: HTMLElement | null;
+let learnMoreError: HTMLElement | null;
+let learnMoreContent: HTMLElement | null;
+let quizSettingsTrigger: HTMLElement | null;
+let quizSettingsPopover: HTMLElement | null;
+let difficultySelect: HTMLSelectElement | null;
+let quizLangSelect: HTMLSelectElement | null;
+let explanationLangSelect: HTMLSelectElement | null;
 
 
 // --- STATE ---
@@ -97,9 +97,6 @@ let currentCaseDescription: string | null = null;
 let selectedFile: File | null = null;
 let selectedImageFile: File | null = null;
 let initialContext: QuizContext | null = null;
-let selectedDifficulty = 'Mixed';
-let selectedExplanationLang = 'Arabic';
-let selectedQuizLang = 'English';
 let timerInterval: number | null = null;
 let startTime: number | null = null;
 let dueRecallItems: RecallItem[] = [];
@@ -293,7 +290,9 @@ async function generateQuiz(isVariation = false) {
     if(generateDifferentQuizBtnFromReview) generateDifferentQuizBtnFromReview.disabled = true;
     
     const numQuestions = numQuestionsInput?.value || '5';
-    const difficulty = selectedDifficulty;
+    const difficulty = difficultySelect?.value || 'Mixed';
+    const selectedQuizLang = quizLangSelect?.value || 'English';
+    const selectedExplanationLang = explanationLangSelect?.value || 'Arabic';
     const knowledgeLevel = (document.querySelector('input[name="knowledge-level"]:checked') as HTMLInputElement)?.value || 'Beginner';
     const learningGoal = (document.querySelector('input[name="learning-goal"]:checked') as HTMLInputElement)?.value || 'Understand Concepts';
     const selectedTypesCheckboxes = document.querySelectorAll('#question-types-selector input[type="checkbox"]:checked');
@@ -809,6 +808,7 @@ function displayReview() {
                 reviewOptionsList.classList.add('review-options-list');
                 q.options.forEach((optionText: string) => {
                     const reviewOptionItem = document.createElement('li');
+                    reviewOptionItem.classList.add('review-option-item');
                     reviewOptionItem.textContent = optionText;
                     if (optionText === q.correctAnswer) reviewOptionItem.classList.add('correct-answer');
                     if (userAnswerData?.userAnswer === optionText) {
@@ -1038,7 +1038,92 @@ function endRecallSession() {
 
 // --- INITIALIZATION ---
 export function initQuizModule() {
+    // --- INITIALIZE DOM ELEMENT SELECTORS ---
+    promptInput = document.getElementById('prompt-input') as HTMLTextAreaElement | null;
+    generateBtn = document.getElementById('generate-btn') as HTMLButtonElement | null;
+    loaderContainer = document.getElementById('loader-container') as HTMLDivElement | null;
+    cancelBtn = document.getElementById('cancel-btn') as HTMLButtonElement | null;
+    fileInput = document.getElementById('file-input') as HTMLInputElement | null;
+    fileNameDisplay = document.getElementById('file-name-display') as HTMLDivElement | null;
+    fileNameSpan = document.getElementById('file-name') as HTMLSpanElement | null;
+    removeFileBtn = document.getElementById('remove-file-btn') as HTMLButtonElement | null;
+    imageInput = document.getElementById('image-input') as HTMLInputElement | null;
+    imageNameDisplay = document.getElementById('image-name-display') as HTMLDivElement | null;
+    imageNameSpan = document.getElementById('image-name') as HTMLSpanElement | null;
+    removeImageBtn = document.getElementById('remove-image-btn') as HTMLButtonElement | null;
+    quizFlowContainer = document.getElementById('quiz-flow-container') as HTMLDivElement | null;
+    landingPage = document.getElementById('landing-page') as HTMLDivElement | null;
+    quizPage = document.getElementById('quiz-page') as HTMLDivElement | null;
+    resultsPage = document.getElementById('results-page') as HTMLDivElement | null;
+    reviewPage = document.getElementById('review-page') as HTMLDivElement | null;
+    historyPage = document.getElementById('history-page') as HTMLDivElement | null;
+    quizTitle = document.getElementById('quiz-title') as HTMLHeadingElement | null;
+    startQuizBtn = document.getElementById('start-quiz-btn') as HTMLButtonElement | null;
+    reviewAnswersBtn = document.getElementById('review-answers-btn') as HTMLButtonElement | null;
+    retakeQuizBtn = document.getElementById('retake-quiz-btn') as HTMLButtonElement | null;
+    generateDifferentQuizBtn = document.getElementById('generate-different-quiz-btn') as HTMLButtonElement | null;
+    newQuizBtn = document.getElementById('new-quiz-btn') as HTMLButtonElement | null;
+    generateDifferentQuizBtnFromReview = document.getElementById('generate-different-quiz-btn-from-review') as HTMLButtonElement | null;
+    newQuizBtnFromReview = document.getElementById('new-quiz-btn-from-review') as HTMLButtonElement | null;
+    backToResultsBtn = document.getElementById('back-to-results-btn') as HTMLButtonElement | null;
+    backToCreatorBtn = document.getElementById('back-to-creator-btn') as HTMLButtonElement | null;
+    quizHistoryBtn = document.getElementById('quiz-history-btn') as HTMLButtonElement | null;
+    questionsContainer = document.getElementById('questions-container') as HTMLDivElement | null;
+    quizNavContainer = document.getElementById('quiz-nav-container') as HTMLDivElement | null;
+    scoreSpan = document.getElementById('score') as HTMLSpanElement | null;
+    totalQuestionsSpan = document.getElementById('total-questions') as HTMLSpanElement | null;
+    percentageSpan = document.getElementById('percentage') as HTMLSpanElement | null;
+    studyAdvice = document.getElementById('study-advice') as HTMLParagraphElement | null;
+    reviewContainer = document.getElementById('review-container') as HTMLDivElement | null;
+    progressBar = document.getElementById('progress-bar') as HTMLDivElement | null;
+    historyContainer = document.getElementById('history-container') as HTMLDivElement | null;
+    numQuestionsInput = document.getElementById('num-questions-input') as HTMLInputElement | null;
+    subjectInput = document.getElementById('subject-input') as HTMLInputElement | null;
+    timerEl = document.getElementById('timer') as HTMLSpanElement | null;
+    timeTakenEl = document.getElementById('time-taken') as HTMLSpanElement | null;
+    preQuizSummaryContainer = document.getElementById('pre-quiz-summary-container') as HTMLDivElement | null;
+    summaryContent = document.getElementById('summary-content') as HTMLDivElement | null;
+    exportAnkiBtn = document.getElementById('export-anki-btn') as HTMLButtonElement | null;
+    recallHubBtn = document.getElementById('recall-hub-btn') as HTMLButtonElement | null;
+    recallCountBadge = document.getElementById('recall-count-badge') as HTMLSpanElement | null;
+    spacedRepetitionPage = document.getElementById('spaced-repetition-page') as HTMLDivElement | null;
+    recallSessionContainer = document.getElementById('recall-session-container') as HTMLDivElement | null;
+    recallProgressEl = document.getElementById('recall-progress') as HTMLDivElement | null;
+    recallQuestion = document.getElementById('recall-question') as HTMLDivElement | null;
+    recallAnswer = document.getElementById('recall-answer') as HTMLDivElement | null;
+    recallNavContainer = document.getElementById('recall-nav-container') as HTMLDivElement | null;
+    recallShowAnswerBtn = document.getElementById('recall-show-answer-btn') as HTMLButtonElement | null;
+    recallFeedbackBtns = document.getElementById('recall-feedback-btns') as HTMLDivElement | null;
+    recallCompleteMessage = document.getElementById('recall-complete-message') as HTMLDivElement | null;
+    recallBackToCreatorBtn = document.getElementById('recall-back-to-creator-btn') as HTMLButtonElement | null;
+    learnMoreLoader = document.getElementById('learn-more-loader');
+    learnMoreError = document.getElementById('learn-more-error');
+    learnMoreContent = document.getElementById('learn-more-content');
+    quizSettingsTrigger = document.getElementById('quiz-settings-trigger');
+    quizSettingsPopover = document.getElementById('quiz-settings-popover');
+    difficultySelect = document.getElementById('difficulty-select') as HTMLSelectElement | null;
+    quizLangSelect = document.getElementById('quiz-lang-select') as HTMLSelectElement | null;
+    explanationLangSelect = document.getElementById('explanation-lang-select') as HTMLSelectElement | null;
+
+
     updateRecallUI();
+
+    // Popover Logic
+    quizSettingsTrigger?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (quizSettingsPopover) {
+            quizSettingsPopover.style.display = quizSettingsPopover.style.display === 'block' ? 'none' : 'block';
+        }
+    });
+
+    document.body.addEventListener('click', (e) => {
+        if (!quizSettingsPopover || !quizSettingsTrigger) return;
+        // Hide if click is outside of the popover and not on the trigger button
+        if (!quizSettingsPopover.contains(e.target as Node) && !quizSettingsTrigger.contains(e.target as Node)) {
+            quizSettingsPopover.style.display = 'none';
+        }
+    });
+
     generateBtn?.addEventListener('click', () => generateQuiz(false));
     promptInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); generateQuiz(false); } });
     cancelBtn?.addEventListener('click', () => {
@@ -1104,33 +1189,6 @@ export function initQuizModule() {
         } else if (target.matches('.learn-more-btn')) {
             const question = target.dataset.question;
             if (question) handleFetchMoreResources(question);
-        }
-    });
-
-    difficultySelector?.addEventListener('click', (e) => {
-        const target = e.target as HTMLButtonElement;
-        if (target.matches('.difficulty-btn')) {
-            difficultySelector.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
-            target.classList.add('active');
-            selectedDifficulty = target.dataset.difficulty || 'Mixed';
-        }
-    });
-
-    explanationLangSelector?.addEventListener('click', (e) => {
-        const target = e.target as HTMLButtonElement;
-        if (target.matches('.difficulty-btn')) {
-            explanationLangSelector.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
-            target.classList.add('active');
-            selectedExplanationLang = target.dataset.lang || 'Arabic';
-        }
-    });
-
-    quizLangSelector?.addEventListener('click', (e) => {
-        const target = e.target as HTMLButtonElement;
-        if (target.matches('.difficulty-btn')) {
-            quizLangSelector.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
-            target.classList.add('active');
-            selectedQuizLang = target.dataset.lang || 'English';
         }
     });
 

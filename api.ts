@@ -6,10 +6,9 @@ import { currentStrings } from "./i18n";
 let ai: GoogleGenAI | null = null;
 
 export function initializeAi(apiKey: string | null): GoogleGenAI | null {
-    const key = apiKey || process.env.API_KEY;
-    if (key) {
+    if (apiKey) {
         try {
-            const newAiInstance = new GoogleGenAI({ apiKey: key });
+            const newAiInstance = new GoogleGenAI({ apiKey });
             ai = newAiInstance;
             return ai;
         } catch (error) {
