@@ -11,7 +11,8 @@
   "dependencies": {
     "@google/genai": "^0.14.0",
     "pdfjs-dist": "4.4.168",
-    "mammoth": "^1.8.0"
+    "mammoth": "^1.8.0",
+    "mermaid": "^10.9.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
