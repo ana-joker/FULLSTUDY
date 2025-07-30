@@ -14,6 +14,9 @@ import { fileToGenerativePart, readFileAsDataURL, shuffleArray } from "./utils";
 import { appSettings } from "./settings";
 import { QuizState, UserAnswer, QuizContext, QuizHistoryEntry, RecallItem } from './state';
 
+// Set the worker source for pdf.js to work correctly from esm.sh
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://esm.sh/pdfjs-dist@4.4.168/build/pdf.worker.mjs";
+
 // --- CONSTANTS ---
 const LOCAL_STORAGE_KEY = 'interactiveQuizState';
 const HISTORY_STORAGE_KEY = 'interactiveQuizHistory';
