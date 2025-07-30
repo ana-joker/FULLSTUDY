@@ -8,10 +8,12 @@ import { initChatModule, showChat, loadLatestChat } from './chat';
 import { initSettingsModule, loadSettings, appSettings } from './settings';
 import { initializeUiText } from './i18n';
 import { showPage, showModal } from './ui';
+import { initPKBModule } from './pkb';
 
 // --- DOM ELEMENT SELECTORS (will be initialized in main) ---
 let navigateToChatBtn: HTMLElement | null;
 let navigateToQuizBtn: HTMLElement | null;
+let navigateToPKBBtn: HTMLElement | null;
 let backToHomeBtns: NodeListOf<Element>;
 let resumePromptContainer: HTMLElement | null;
 let resumeYesBtn: HTMLElement | null;
@@ -21,10 +23,11 @@ let resumeNoBtn: HTMLElement | null;
 /**
  * Initializes the entire application.
  */
-function main() {
+async function main() {
     // --- INITIALIZE DOM ELEMENT SELECTORS ---
     navigateToChatBtn = document.getElementById('navigate-to-chat');
     navigateToQuizBtn = document.getElementById('navigate-to-quiz');
+    navigateToPKBBtn = document.getElementById('navigate-to-pkb');
     backToHomeBtns = document.querySelectorAll('.back-to-home-btn');
     resumePromptContainer = document.getElementById('resume-prompt-container');
     resumeYesBtn = document.getElementById('resume-yes-btn');
@@ -38,6 +41,7 @@ function main() {
     initSettingsModule();
     initQuizModule();
     initChatModule();
+    await initPKBModule();
 
     // 3. Setup top-level navigation
     navigateToChatBtn?.addEventListener('click', () => {
@@ -47,6 +51,8 @@ function main() {
     navigateToQuizBtn?.addEventListener('click', () => {
         showQuizCreator();
     });
+
+    // PKB navigation is handled within its own module (initPKBModule)
 
     backToHomeBtns.forEach(btn => {
         btn.addEventListener('click', () => showPage('home-page'));

@@ -5,6 +5,9 @@ const uiStringsEn = {
     backToHome: "Back to Home",
     close: "Close",
     cancel: "Cancel",
+    save: "Save",
+    delete: "Delete",
+    edit: "Edit",
 
     // Home Page
     mainAppTitle: "Study & Quiz Hub",
@@ -13,7 +16,9 @@ const uiStringsEn = {
     studyHubDescription: "Start a conversation with your AI tutor, ask questions, and explore topics in depth.",
     quizHubTitle: "Quiz Hub",
     quizHubDescription: "Generate custom quizzes from text, documents, or images to test your knowledge.",
-    
+    pkbHubTitle: "Knowledge Bases",
+    pkbHubDescription: "Create and manage personal knowledge bases for a customized AI experience.",
+
     // Chat
     newChat: "New Chat +",
     systemInstruction: "System Instruction",
@@ -22,10 +27,13 @@ const uiStringsEn = {
     stopRecording: "Stop Recording",
     copy: "Copy",
     regenerate: "Regenerate",
-    delete: "Delete",
     pin: "Pin",
     unpin: "Unpin",
-    edit: "Edit",
+    chatDeleteConfirm: "Are you sure you want to delete this chat?",
+    invokePKB: "Invoke Knowledge Base",
+    activePKBs: "Active Knowledge Bases",
+    tokenWarning: "Active knowledge bases may exceed the token limit. Please deactivate some if you encounter issues.",
+
 
     // Quiz
     generateQuiz: "Generate Quiz",
@@ -99,6 +107,22 @@ const uiStringsEn = {
     subjectLabel: "Subject/Field (Optional)",
     explanationLanguage: "Explanation Language",
     
+    // PKB - Personal Knowledge Base
+    pkbManagerTitle: "Knowledge Base Manager",
+    pkbCreateNew: "Create New",
+    pkbNoBases: "No knowledge bases found. Create one to get started!",
+    pkbAddItem: "Add Item",
+    pkbAddFileOrImage: "Add File or Image",
+    pkbAddItemAction: "Add Item to Knowledge Base",
+    pkbItems: "Items",
+    pkbCreateTitle: "Create Knowledge Base",
+    pkbNameLabel: "Name",
+    pkbDescriptionLabel: "Description",
+    pkbSelectTitle: "Activate Knowledge Bases",
+    pkbSelectDescription: "Select one or more bases to include in the chat context.",
+    pkbActivate: "Activate",
+    pkbDeleteConfirm: "Are you sure you want to delete this knowledge base and all its contents?",
+
     // Settings
     settings: "Settings",
     // -- General Settings
@@ -129,10 +153,26 @@ const uiStringsEn = {
     dataBackupDescription: "Export your settings and all history (chats, quizzes) to a single JSON file.",
     exportData: "Export All Data",
     // -- Chat Settings
+    chatSettingsTitle: "Chat Settings",
+    chatSettingsDisplay: "Display",
+    chatShowWordCount: "Show message word count",
+    chatShowCharCount: "Show message character count",
+    chatShowTokenUsage: "Show token usage in message",
+    chatShowModelName: "Show model name",
+    chatShowTimestamps: "Show timestamp for message",
+    chatShowFirstTokenDelay: "Show first token delay",
+    chatSettingsFunctionality: "Functionality",
+    chatAutoHideCodeBlocks: "Automatically hide code blocks",
+    autoCreateTitle: "Automatically create chat titles",
+    chatEnableSpellcheck: "Spell check",
+    chatDisplayMarkdown: "Display Markdown",
+    chatDisplayMermaid: "Display Mermaid diagrams",
+    chatInjectDefaultMetadata: "Inject default metadata",
+    chatAutoPreviewArtifacts: "Automatic preview for artifacts",
     modelParameters: "Model Parameters",
-    settingsChatBehavior: "Behavior",
-    autoCreateTitle: "Auto Create Chat Titles",
-    streamingOutput: "Streaming Output",
+    temperature: "Temperature",
+    topP: "Top-P",
+    topK: "Top-K",
     // -- Quiz Settings
     learningContext: "Learning Context",
     quizConfiguration: "Quiz Configuration",
@@ -145,6 +185,9 @@ const uiStringsAr = {
     backToHome: "العودة للرئيسية",
     close: "إغلاق",
     cancel: "إلغاء",
+    save: "حفظ",
+    delete: "حذف",
+    edit: "تعديل",
 
     // Home Page
     mainAppTitle: "مركز المذاكرة والاختبارات",
@@ -153,7 +196,9 @@ const uiStringsAr = {
     studyHubDescription: "ابدأ محادثة مع معلمك الذكي، اطرح الأسئلة، واستكشف المواضيع بعمق.",
     quizHubTitle: "مركز الاختبارات",
     quizHubDescription: "أنشئ اختبارات مخصصة من النصوص، المستندات، أو الصور لاختبار معرفتك.",
-    
+    pkbHubTitle: "قواعد المعرفة",
+    pkbHubDescription: "أنشئ وأدر قواعد المعرفة الشخصية لتجربة ذكاء اصطناعي مخصصة.",
+
     // Chat
     newChat: "محادثة جديدة +",
     systemInstruction: "تعليمات النظام",
@@ -162,10 +207,12 @@ const uiStringsAr = {
     stopRecording: "إيقاف التسجيل",
     copy: "نسخ",
     regenerate: "إعادة إنشاء",
-    delete: "حذف",
     pin: "تثبيت",
     unpin: "إلغاء التثبيت",
-    edit: "تعديل",
+    chatDeleteConfirm: "هل أنت متأكد أنك تريد حذف هذه المحادثة؟",
+    invokePKB: "استدعاء قاعدة معرفية",
+    activePKBs: "قواعد المعرفة النشطة",
+    tokenWarning: "قد تتجاوز قواعد المعرفة النشطة حد التوكنات. يرجى إلغاء تنشيط البعض إذا واجهت مشاكل.",
 
     // Quiz
     generateQuiz: "أنشئ اختبار",
@@ -239,6 +286,23 @@ const uiStringsAr = {
     subjectLabel: "الموضوع/المجال (اختياري)",
     explanationLanguage: "لغة الشرح",
 
+    // PKB - Personal Knowledge Base
+    pkbManagerTitle: "مدير قواعد المعرفة",
+    pkbCreateNew: "إنشاء جديد",
+    pkbNoBases: "لم يتم العثور على قواعد معرفية. أنشئ واحدة للبدء!",
+    pkbAddItem: "إضافة عنصر",
+    pkbAddFileOrImage: "إضافة ملف أو صورة",
+    pkbAddItemAction: "إضافة عنصر إلى قاعدة المعرفة",
+    pkbItems: "العناصر",
+    pkbCreateTitle: "إنشاء قاعدة معرفية",
+    pkbNameLabel: "الاسم",
+    pkbDescriptionLabel: "الوصف",
+    pkbSelectTitle: "تفعيل قواعد المعرفة",
+    pkbSelectDescription: "اختر قاعدة أو أكثر لتضمينها في سياق المحادثة.",
+    pkbActivate: "تفعيل",
+    pkbDeleteConfirm: "هل أنت متأكد من أنك تريد حذف قاعدة المعرفة هذه وجميع محتوياتها؟",
+
+
     // Settings
     settings: "الإعدادات",
     // -- General Settings
@@ -269,10 +333,26 @@ const uiStringsAr = {
     dataBackupDescription: "تصدير الإعدادات وجميع السجلات (المحادثات، الاختبارات) إلى ملف JSON واحد.",
     exportData: "تصدير كل البيانات",
     // -- Chat Settings
-    modelParameters: "معلمات النموذج",
-    settingsChatBehavior: "سلوك المحادثة",
-    autoCreateTitle: "إنشاء عناوين تلقائي",
-    streamingOutput: "إخراج متدفق",
+    chatSettingsTitle: "إعدادات المحادثة",
+    chatSettingsDisplay: "عرض",
+    chatShowWordCount: "عرض عدد كلمات الرسالة",
+    chatShowCharCount: "عرض عدد الرموز في الرسالة",
+    chatShowTokenUsage: "عرض استخدام الرموز في الرسالة",
+    chatShowModelName: "عرض اسم النموذج",
+    chatShowTimestamps: "عرض طابع زمني للرسالة",
+    chatShowFirstTokenDelay: "عرض التأخير الأول للرمز",
+    chatSettingsFunctionality: "وظيفة",
+    chatAutoHideCodeBlocks: "تلقائيا إخفاء الكتل البرمجية",
+    autoCreateTitle: "تلقائيا إنشاء عناوين المحادثات",
+    chatEnableSpellcheck: "تدقيق إملائي",
+    chatDisplayMarkdown: "عرض Markdown",
+    chatDisplayMermaid: "عرض مخططات ورسوم Mermaid",
+    chatInjectDefaultMetadata: "حقن البيانات الوصفية الافتراضية",
+    chatAutoPreviewArtifacts: "معاينة تلقائية للتحف",
+    modelParameters: "إعدادات النموذج",
+    temperature: "الحرارة (Temperature)",
+    topP: "Top-P",
+    topK: "Top-K",
     // -- Quiz Settings
     learningContext: "سياق التعلم",
     quizConfiguration: "إعدادات الاختبار",

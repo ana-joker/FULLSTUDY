@@ -6,13 +6,15 @@
  */
 import { Type, Part } from "@google/genai";
 import * as pdfjsLib from 'pdfjs-dist';
-import * as mammoth from 'mammoth';
 import { getAiInstance, generateQuizContent, fetchMoreResources } from "./api";
 import { currentStrings } from "./i18n";
 import { showPage, showError, hideError, showModal } from "./ui";
-import { fileToGenerativePart, readFileAsDataURL, shuffleArray } from "./utils";
+import { fileToGenerativePart, readFileAsDataURL, shuffleArray, getDocumentText } from "./utils";
 import { appSettings } from "./settings";
 import { QuizState, UserAnswer, QuizContext, QuizHistoryEntry, RecallItem } from './state';
+
+// Set the worker source for pdf.js to work correctly from esm.sh
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://esm.sh/pdfjs-dist@4.4.168/build/pdf.worker.mjs";
 
 // --- CONSTANTS ---
 const LOCAL_STORAGE_KEY = 'interactiveQuizState';
@@ -208,42 +210,6 @@ function saveQuizResultToHistory(score: number) {
 
 
 // --- CORE QUIZ LOGIC ---
-async function getDocumentText(file: File): Promise<string> {
-    const extension = file.name.split('.').pop()?.toLowerCase();
-    const arrayBuffer = await file.arrayBuffer();
-
-    if (extension === 'pdf') {
-        try {
-            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-            let text = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const content = await page.getTextContent();
-                text += content.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
-            }
-            return text;
-        } catch (error) {
-            console.error("Error parsing PDF:", error);
-            throw new Error("Failed to parse PDF. It may be corrupted or encrypted.");
-        }
-    } else if (extension === 'docx') {
-        try {
-            const result = await mammoth.extractRawText({ arrayBuffer });
-            return result.value;
-        } catch (error) {
-            console.error("Error parsing DOCX:", error);
-            throw new Error("Failed to parse DOCX file. It might be corrupted.");
-        }
-    } else {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = (error) => reject(error);
-            reader.readAsText(file);
-        });
-    }
-}
-
 async function generateQuiz(isVariation = false) {
     let currentPrompt: string;
     let currentFile: File | null;

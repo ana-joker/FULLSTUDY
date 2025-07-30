@@ -13,15 +13,21 @@ export type AppSettings = {
     startupPage: 'home' | 'last-session';
     apiKey: string | null;
     
-    // Chat Specific (but stored in one object for simplicity)
-    temperature: number;
-    topK: number;
-    topP: number;
-    maxOutputTokens: number;
+    // Chat Specific
     autoCreateTitle: boolean;
-    streamingOutput: boolean;
-    displayMarkdown: boolean;
-    showTimestamps: boolean;
+    chatShowWordCount: boolean;
+    chatShowCharCount: boolean;
+    chatShowModelName: boolean;
+    chatShowTimestamps: boolean;
+    chatAutoHideCodeBlocks: boolean;
+    chatEnableSpellcheck: boolean;
+    chatDisplayMarkdown: boolean;
+    chatDisplayMermaid: boolean;
+    modelParams: {
+        temperature: number;
+        topP: number;
+        topK: number;
+    };
 };
 
 // --- DOM SELECTORS (declared, but not initialized) ---
@@ -43,19 +49,28 @@ let exportDataBtn: HTMLElement | null;
 const SETTINGS_KEY = 'interactiveQuizSettings';
 export let appSettings: AppSettings;
 const defaultSettings: AppSettings = {
+    // General
     language: 'ar',
     theme: 'dark',
     fontSize: 'medium',
     startupPage: 'home',
-    temperature: 0.5,
-    topK: 32,
-    topP: 0.95,
-    maxOutputTokens: 8192,
     apiKey: null,
+    
+    // Chat Specific
     autoCreateTitle: true,
-    streamingOutput: true,
-    displayMarkdown: true,
-    showTimestamps: false,
+    chatShowWordCount: false,
+    chatShowCharCount: false,
+    chatShowModelName: false,
+    chatShowTimestamps: true,
+    chatAutoHideCodeBlocks: false,
+    chatEnableSpellcheck: true,
+    chatDisplayMarkdown: true,
+    chatDisplayMermaid: true,
+    modelParams: {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40,
+    },
 };
 
 // --- FUNCTIONS ---

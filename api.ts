@@ -41,15 +41,13 @@ export async function generateQuizContent(promptParts: Part[], schema: any): Pro
         config: {
             responseMimeType: "application/json",
             responseSchema: schema,
-            temperature: appSettings.temperature,
-            topK: appSettings.topK,
         },
     });
 
     return JSON.parse(response.text);
 }
 
-export async function startChatSession(history?: Content[], systemInstruction?: string): Promise<Chat | null> {
+export async function startChatSession(history?: Content[], systemInstruction?: string, config?: any): Promise<Chat | null> {
     if (!ai) {
         showError(currentStrings.apiKeyMissing);
         return null;
@@ -58,10 +56,7 @@ export async function startChatSession(history?: Content[], systemInstruction?: 
         model: 'gemini-2.5-flash',
         config: {
             systemInstruction: systemInstruction,
-            temperature: appSettings.temperature,
-            topK: appSettings.topK,
-            topP: appSettings.topP,
-            maxOutputTokens: appSettings.maxOutputTokens
+            ...config,
         },
         history: history || [],
     });

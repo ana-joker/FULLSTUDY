@@ -63,3 +63,22 @@ export interface ChatSession {
     lastUpdated: number;
     isPinned: boolean;
 }
+
+// --- PERSONAL KNOWLEDGE BASE (PKB) STATE ---
+export interface PKBItem {
+    id: string; // Unique ID for the item
+    description: string;
+    type: 'file' | 'image';
+    fileName: string;
+    fileType: string;
+    // Content is now stored in IndexedDB, this property is removed from the localStorage object.
+    content?: string; 
+}
+
+export interface PKB {
+    id: string; // Unique ID for the knowledge base
+    name: string;
+    description: string;
+    items: PKBItem[];
+    createdAt: number;
+}

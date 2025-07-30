@@ -1,14 +1,18 @@
 
+
 import { Part } from "@google/genai";
 import { getAiInstance, startChatSession, generateTitle } from "./api";
-import { ChatSession, ChatMessage } from './state';
-import { fileToGenerativePart } from "./utils";
+import { ChatSession, ChatMessage, PKB } from './state';
+import { fileToGenerativePart, estimateTokens } from "./utils";
 import { showPage, showError } from "./ui";
 import { currentStrings } from "./i18n";
 import { appSettings, saveSettings } from "./settings";
+import { getActivePKBContent, getActivePKBs } from "./pkb";
+import mermaid from 'mermaid';
 
 // --- CONSTANTS ---
 const CHAT_HISTORY_KEY = 'chatHistory';
+const TOKEN_LIMIT = 1000000;
 
 // --- DOM ELEMENTS (declare only) ---
 let chatPage: HTMLElement | null;
@@ -29,16 +33,27 @@ let recordingTimerEl: HTMLElement | null;
 let welcomeMessage: HTMLElement | null;
 let chatSettingsTrigger: HTMLElement | null;
 let chatSettingsPopover: HTMLElement | null;
-let temperatureSlider: HTMLInputElement | null;
-let temperatureValue: HTMLSpanElement | null;
-let topkSlider: HTMLInputElement | null;
-let topkValue: HTMLSpanElement | null;
-let toppSlider: HTMLInputElement | null;
-let toppValue: HTMLSpanElement | null;
-let maxTokensSlider: HTMLInputElement | null;
-let maxTokensValue: HTMLSpanElement | null;
+let activePKBContainer: HTMLElement | null;
+let activePKBHeader: HTMLElement | null;
+let activePKBList: HTMLElement | null;
+let tokenWarning: HTMLElement | null;
+let invokePKBBtn: HTMLElement | null;
+
+
+// New settings toggles
 let autoCreateTitleToggle: HTMLInputElement;
-let streamingOutputToggle: HTMLInputElement;
+let chatShowWordCountToggle: HTMLInputElement;
+let chatShowCharCountToggle: HTMLInputElement;
+let chatShowModelNameToggle: HTMLInputElement;
+let chatShowTimestampsToggle: HTMLInputElement;
+let chatAutoHideCodeBlocksToggle: HTMLInputElement;
+let chatEnableSpellcheckToggle: HTMLInputElement;
+let chatDisplayMarkdownToggle: HTMLInputElement;
+let chatDisplayMermaidToggle: HTMLInputElement;
+
+// Model Param Sliders
+let temperatureSlider: HTMLInputElement, topPSlider: HTMLInputElement, topKSlider: HTMLInputElement;
+let temperatureValue: HTMLSpanElement, topPValue: HTMLSpanElement, topKValue: HTMLSpanElement;
 
 
 // --- CHAT STATE ---
@@ -75,6 +90,7 @@ function sortAndSaveChatHistory() {
 export function showChat() {
     showPage('chat-page');
     renderChatList();
+    renderActivePKBList(getActivePKBs());
     if (!activeChatSessionId && chatSessions.length > 0) {
         loadChat(chatSessions[0].id);
     } else if (activeChatSessionId) {
@@ -114,6 +130,7 @@ function renderChatList() {
             <div class="chat-item-actions">
                 <button class="chat-item-action-btn" data-action="pin" title="${session.isPinned ? currentStrings.unpin : currentStrings.pin}">${session.isPinned ? '📌' : '📍'}</button>
                 <button class="chat-item-action-btn" data-action="edit" title="${currentStrings.edit}">✏️</button>
+                <button class="chat-item-action-btn" data-action="delete" title="${currentStrings.delete}">🗑️</button>
             </div>
         `;
 
@@ -128,6 +145,29 @@ function renderChatList() {
         chatListEl.appendChild(item);
     });
 }
+
+/**
+ * Renders the list of active PKBs in the sidebar.
+ * @param activePKBs Array of active PKB objects.
+ */
+export function renderActivePKBList(activePKBs: PKB[]) {
+    if (!activePKBContainer || !activePKBList) return;
+
+    if (activePKBs.length > 0) {
+        activePKBContainer.style.display = 'block';
+        activePKBList.innerHTML = '';
+        activePKBs.forEach(pkb => {
+            const listItem = document.createElement('li');
+            listItem.className = 'active-pkb-list-item';
+            listItem.textContent = pkb.name;
+            listItem.title = pkb.description;
+            activePKBList.appendChild(listItem);
+        });
+    } else {
+        activePKBContainer.style.display = 'none';
+    }
+}
+
 
 /**
  * Starts a new, empty chat session.
@@ -189,16 +229,56 @@ function renderMessage(message: ChatMessage) {
     const content = document.createElement('div');
     content.className = 'message-content';
     
+    // Process markdown and special blocks
     let textHtml = message.text;
-    if(appSettings.displayMarkdown) {
+    if(appSettings.chatDisplayMarkdown) {
+        textHtml = textHtml.replace(/</g, "&lt;").replace(/>/g, "&gt;"); // Basic sanitize
+        
+        // Process code blocks first
+        textHtml = textHtml.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+            const safeCode = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            if (lang.toLowerCase() === 'mermaid' && appSettings.chatDisplayMermaid) {
+                return `<pre class="mermaid">${safeCode}</pre>`;
+            }
+            if (appSettings.chatAutoHideCodeBlocks) {
+                return `<details><summary>${lang || 'Code Block'}</summary><pre><code>${safeCode}</code></pre></details>`;
+            }
+            return `<pre><code>${safeCode}</code></pre>`;
+        });
+        
+        // Process other markdown
         textHtml = textHtml
-            .replace(/</g, "&lt;").replace(/>/g, "&gt;") // Basic sanitize
             .replace(/\n/g, '<br>') 
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
             .replace(/\*(.*?)\*/g, '<em>$1</em>')       // Italic
             .replace(/`([^`]+)`/g, '<code>$1</code>');  // Inline code
     }
     content.innerHTML = textHtml;
+    
+    // Message Metadata
+    const metadataContainer = document.createElement('div');
+    metadataContainer.className = 'message-metadata';
+    let hasMetadata = false;
+
+    if (appSettings.chatShowWordCount) {
+        metadataContainer.innerHTML += `<span>Words: ${message.text.split(/\s+/).filter(Boolean).length}</span>`;
+        hasMetadata = true;
+    }
+    if (appSettings.chatShowCharCount) {
+        metadataContainer.innerHTML += `<span>Chars: ${message.text.length}</span>`;
+        hasMetadata = true;
+    }
+    if (appSettings.chatShowModelName && message.role === 'model') {
+        metadataContainer.innerHTML += `<span>Model: gemini-2.5-flash</span>`;
+        hasMetadata = true;
+    }
+    if (appSettings.chatShowTimestamps && message.timestamp) {
+        metadataContainer.innerHTML += `<span>${message.timestamp}</span>`;
+        hasMetadata = true;
+    }
+    if (hasMetadata) {
+        content.appendChild(metadataContainer);
+    }
     
     if (message.files && message.files.length > 0) {
         message.files.forEach(file => {
@@ -227,6 +307,16 @@ function renderMessage(message: ChatMessage) {
     messageWrapper.appendChild(avatar);
     messageWrapper.appendChild(content);
     chatMessagesEl.appendChild(messageWrapper);
+    
+    // Run mermaid if needed
+    if (appSettings.chatDisplayMermaid) {
+        try {
+            mermaid.run({ nodes: messageWrapper.querySelectorAll('.mermaid') });
+        } catch(e) {
+            console.error("Mermaid rendering failed:", e);
+        }
+    }
+    
     chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
 }
 
@@ -241,6 +331,32 @@ async function sendMessage() {
         showError(currentStrings.apiKeyMissing);
         return;
     }
+
+    if(tokenWarning) tokenWarning.style.display = 'none';
+
+    // --- PKB Integration ---
+    const pkbParts = await getActivePKBContent();
+    const userParts: Part[] = [];
+    const fileMetadataForMessage: ChatMessage['files'] = [];
+
+    if (text) userParts.push({ text });
+    for (const file of attachedFiles) {
+        userParts.push(await fileToGenerativePart(file));
+        fileMetadataForMessage.push({ name: file.name, type: file.type, url: URL.createObjectURL(file) });
+    }
+    
+    const allParts = [...pkbParts, ...userParts];
+
+    // Token check
+    const totalTokens = estimateTokens(allParts);
+    if (totalTokens > TOKEN_LIMIT) {
+        if(tokenWarning) {
+            tokenWarning.textContent = currentStrings.tokenWarning;
+            tokenWarning.style.display = 'block';
+        }
+        return;
+    }
+    // --- End PKB Integration ---
 
     let isNewChat = false;
     let session: ChatSession;
@@ -263,23 +379,13 @@ async function sendMessage() {
         session.systemInstruction = systemInstructionInput.value.trim();
     }
 
-    const userParts: Part[] = [];
-    const fileMetadataForMessage: ChatMessage['files'] = [];
-
-    if (text) userParts.push({ text });
-
-    for (const file of attachedFiles) {
-        userParts.push(await fileToGenerativePart(file));
-        fileMetadataForMessage.push({ name: file.name, type: file.type, url: URL.createObjectURL(file) });
-    }
-
     const userMessage: ChatMessage = {
         id: Date.now(),
         role: 'user',
-        parts: userParts,
-        text: text,
+        parts: allParts, // Use all parts (PKB + user) for history
+        text: text, // Keep original user text for display
         files: fileMetadataForMessage,
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     session.history.push(userMessage);
     renderMessage(userMessage);
@@ -298,10 +404,10 @@ async function sendMessage() {
     if (chatLoader) chatLoader.style.display = 'flex';
 
     try {
-        const chat = await startChatSession(session.history.map(m => ({ role: m.role, parts: m.parts })), session.systemInstruction);
+        const chat = await startChatSession(session.history.map(m => ({ role: m.role, parts: m.parts })), session.systemInstruction, appSettings.modelParams);
         if (!chat) throw new Error("Failed to start chat session.");
         
-        const resultStream = await chat.sendMessageStream({ message: userParts });
+        const resultStream = await chat.sendMessageStream({ message: allParts });
         
         let responseText = '';
         const modelMessage: ChatMessage = {
@@ -309,23 +415,21 @@ async function sendMessage() {
             role: 'model',
             parts: [],
             text: '...',
-            timestamp: new Date().toLocaleTimeString()
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         
-        let modelMessageEl: HTMLElement | null | undefined;
-        
-        if (appSettings.streamingOutput) {
-            session.history.push(modelMessage);
-            renderMessage(modelMessage);
-            modelMessageEl = document.getElementById(`message-${modelMessage.id}`)?.querySelector('.message-content');
-        }
+        session.history.push(modelMessage);
+        renderMessage(modelMessage);
+        const modelMessageEl = document.getElementById(`message-${modelMessage.id}`);
+        const modelContentEl = modelMessageEl?.querySelector('.message-content');
 
         if(chatLoader) chatLoader.style.display = 'none';
         
         for await (const chunk of resultStream) {
             responseText += chunk.text;
-            if (appSettings.streamingOutput && modelMessageEl) {
-                modelMessageEl.firstChild!.nodeValue = responseText; // Update only text node
+            if (modelContentEl?.firstChild) {
+                // Just update the main text content, preserving other elements
+                modelContentEl.firstChild.nodeValue = responseText;
                 chatMessagesEl!.scrollTop = chatMessagesEl!.scrollHeight;
             }
         }
@@ -333,18 +437,11 @@ async function sendMessage() {
         modelMessage.text = responseText;
         modelMessage.parts = [{ text: responseText }];
         
-        if (!appSettings.streamingOutput) {
-            session.history.push(modelMessage);
-            renderMessage(modelMessage);
-        } else if (modelMessageEl) {
-            modelMessageEl.innerHTML = responseText.replace(/\n/g, '<br>') + `
-                <div class="message-actions">
-                    <button class="message-action-btn" data-action="copy" title="${currentStrings.copy}">📋</button>
-                    <button class="message-action-btn" data-action="regenerate" title="${currentStrings.regenerate}">🔄</button>
-                    <button class="message-action-btn" data-action="delete" title="${currentStrings.delete}">🗑️</button>
-                </div>
-            `;
+        // Re-render the final message to process markdown and add actions
+        if(modelMessageEl) {
+            chatMessagesEl?.removeChild(modelMessageEl);
         }
+        renderMessage(modelMessage);
 
     } catch (err) {
         console.error(err);
@@ -361,12 +458,15 @@ async function sendMessage() {
 
 
 /**
- * Handles clicks on sidebar chat item actions (pin, edit).
+ * Handles clicks on sidebar chat item actions (pin, edit, delete).
  * @param e The click event.
  */
 function handleChatItemAction(e: MouseEvent) {
     const target = e.target as HTMLElement;
-    const action = target.dataset.action;
+    const button = target.closest<HTMLElement>('.chat-item-action-btn');
+    if (!button) return;
+
+    const action = button.dataset.action;
     if (!action) return;
 
     const itemEl = target.closest<HTMLElement>('.chat-history-item');
@@ -410,9 +510,26 @@ function handleChatItemAction(e: MouseEvent) {
                 }
             });
             break;
+        case 'delete':
+            handleDeleteChat(sessionId);
+            break;
     }
 }
 
+/**
+ * Deletes a chat session after confirmation.
+ * @param sessionId The ID of the session to delete.
+ */
+function handleDeleteChat(sessionId: string) {
+    if (confirm(currentStrings.chatDeleteConfirm)) {
+        chatSessions = chatSessions.filter(s => s.id !== sessionId);
+        if (activeChatSessionId === sessionId) {
+            startNewChat();
+        }
+        sortAndSaveChatHistory();
+        renderChatList();
+    }
+}
 
 /**
  * Handles actions on a message (copy, regenerate, delete).
@@ -420,7 +537,10 @@ function handleChatItemAction(e: MouseEvent) {
  */
 function handleMessageAction(e: MouseEvent) {
     const target = e.target as HTMLElement;
-    const action = target.dataset.action;
+    const button = target.closest<HTMLElement>('.message-action-btn');
+    if (!button) return;
+
+    const action = button.dataset.action;
     if (!action) return;
     
     const messageEl = target.closest('.chat-message');
@@ -530,19 +650,57 @@ async function handleVoiceRecording() {
     }
 }
 
+function initModelParamSliders() {
+    if (!temperatureSlider || !topPSlider || !topKSlider || !temperatureValue || !topPValue || !topKValue) return;
+
+    const params = appSettings.modelParams;
+
+    // Set initial values from settings
+    temperatureSlider.value = String(params.temperature);
+    temperatureValue.textContent = String(params.temperature.toFixed(1));
+    topPSlider.value = String(params.topP);
+    topPValue.textContent = String(params.topP.toFixed(2));
+    topKSlider.value = String(params.topK);
+    topKValue.textContent = String(params.topK);
+
+    // Add event listeners
+    temperatureSlider.addEventListener('input', () => {
+        const val = parseFloat(temperatureSlider.value);
+        appSettings.modelParams.temperature = val;
+        temperatureValue.textContent = val.toFixed(1);
+        saveSettings();
+    });
+
+    topPSlider.addEventListener('input', () => {
+        const val = parseFloat(topPSlider.value);
+        appSettings.modelParams.topP = val;
+        topPValue.textContent = val.toFixed(2);
+        saveSettings();
+    });
+
+    topKSlider.addEventListener('input', () => {
+        const val = parseInt(topKSlider.value, 10);
+        appSettings.modelParams.topK = val;
+        topKValue.textContent = String(val);
+        saveSettings();
+    });
+}
+
 function initChatSettings() {
     // Populate popover with current settings
-    if (temperatureSlider) temperatureSlider.value = String(appSettings.temperature);
-    if (temperatureValue) temperatureValue.textContent = String(appSettings.temperature);
-    if (topkSlider) topkSlider.value = String(appSettings.topK);
-    if (topkValue) topkValue.textContent = String(appSettings.topK);
-    if (toppSlider) toppSlider.value = String(appSettings.topP);
-    if (toppValue) toppValue.textContent = String(appSettings.topP);
-    if (maxTokensSlider) maxTokensSlider.value = String(appSettings.maxOutputTokens);
-    if (maxTokensValue) maxTokensValue.textContent = String(appSettings.maxOutputTokens);
-    if(autoCreateTitleToggle) autoCreateTitleToggle.checked = appSettings.autoCreateTitle;
-    if(streamingOutputToggle) streamingOutputToggle.checked = appSettings.streamingOutput;
+    autoCreateTitleToggle.checked = appSettings.autoCreateTitle;
+    chatShowWordCountToggle.checked = appSettings.chatShowWordCount;
+    chatShowCharCountToggle.checked = appSettings.chatShowCharCount;
+    chatShowModelNameToggle.checked = appSettings.chatShowModelName;
+    chatShowTimestampsToggle.checked = appSettings.chatShowTimestamps;
+    chatAutoHideCodeBlocksToggle.checked = appSettings.chatAutoHideCodeBlocks;
+    chatEnableSpellcheckToggle.checked = appSettings.chatEnableSpellcheck;
+    chatDisplayMarkdownToggle.checked = appSettings.chatDisplayMarkdown;
+    chatDisplayMermaidToggle.checked = appSettings.chatDisplayMermaid;
+    
+    chatInput.spellcheck = appSettings.chatEnableSpellcheck;
 
+    initModelParamSliders();
 
     // Add event listeners
     chatSettingsTrigger?.addEventListener('click', (e) => {
@@ -554,36 +712,29 @@ function initChatSettings() {
         }
     });
 
-    document.body.addEventListener('click', () => {
-        if(chatSettingsPopover) chatSettingsPopover.style.display = 'none';
+    document.body.addEventListener('click', (e) => {
+        if(chatSettingsPopover && !chatSettingsPopover.contains(e.target as Node) && !chatSettingsTrigger?.contains(e.target as Node)) {
+            chatSettingsPopover.style.display = 'none';
+        }
     });
 
     chatSettingsPopover?.addEventListener('click', (e) => e.stopPropagation());
 
     const save = () => { saveSettings(); };
 
-    temperatureSlider?.addEventListener('input', () => {
-        if (temperatureValue && temperatureSlider) temperatureValue.textContent = temperatureSlider.value;
-        if(temperatureSlider) appSettings.temperature = parseFloat(temperatureSlider.value);
+    autoCreateTitleToggle.addEventListener('change', () => { appSettings.autoCreateTitle = autoCreateTitleToggle.checked; save(); });
+    chatShowWordCountToggle.addEventListener('change', () => { appSettings.chatShowWordCount = chatShowWordCountToggle.checked; save(); });
+    chatShowCharCountToggle.addEventListener('change', () => { appSettings.chatShowCharCount = chatShowCharCountToggle.checked; save(); });
+    chatShowModelNameToggle.addEventListener('change', () => { appSettings.chatShowModelName = chatShowModelNameToggle.checked; save(); });
+    chatShowTimestampsToggle.addEventListener('change', () => { appSettings.chatShowTimestamps = chatShowTimestampsToggle.checked; save(); });
+    chatAutoHideCodeBlocksToggle.addEventListener('change', () => { appSettings.chatAutoHideCodeBlocks = chatAutoHideCodeBlocksToggle.checked; save(); });
+    chatEnableSpellcheckToggle.addEventListener('change', () => { 
+        appSettings.chatEnableSpellcheck = chatEnableSpellcheckToggle.checked;
+        chatInput.spellcheck = appSettings.chatEnableSpellcheck;
         save();
     });
-    topkSlider?.addEventListener('input', () => {
-        if (topkValue && topkSlider) topkValue.textContent = topkSlider.value;
-        if(topkSlider) appSettings.topK = parseInt(topkSlider.value, 10);
-        save();
-    });
-    toppSlider?.addEventListener('input', () => {
-        if (toppValue && toppSlider) toppValue.textContent = toppSlider.value;
-        if(toppSlider) appSettings.topP = parseFloat(toppSlider.value);
-        save();
-    });
-    maxTokensSlider?.addEventListener('input', () => {
-        if (maxTokensValue && maxTokensSlider) maxTokensValue.textContent = maxTokensSlider.value;
-        if(maxTokensSlider) appSettings.maxOutputTokens = parseInt(maxTokensSlider.value, 10);
-        save();
-    });
-    autoCreateTitleToggle?.addEventListener('change', () => { if(autoCreateTitleToggle) appSettings.autoCreateTitle = autoCreateTitleToggle.checked; save(); });
-    streamingOutputToggle?.addEventListener('change', () => { if(streamingOutputToggle) appSettings.streamingOutput = streamingOutputToggle.checked; save(); });
+    chatDisplayMarkdownToggle.addEventListener('change', () => { appSettings.chatDisplayMarkdown = chatDisplayMarkdownToggle.checked; save(); });
+    chatDisplayMermaidToggle.addEventListener('change', () => { appSettings.chatDisplayMermaid = chatDisplayMermaidToggle.checked; save(); });
 }
 
 export function initChatModule() {
@@ -606,16 +757,40 @@ export function initChatModule() {
     welcomeMessage = document.getElementById('chat-welcome-message');
     chatSettingsTrigger = document.getElementById('chat-settings-trigger');
     chatSettingsPopover = document.getElementById('chat-settings-popover');
-    temperatureSlider = document.getElementById('temperature-slider') as HTMLInputElement | null;
-    temperatureValue = document.getElementById('temperature-value') as HTMLSpanElement | null;
-    topkSlider = document.getElementById('topk-slider') as HTMLInputElement | null;
-    topkValue = document.getElementById('topk-value') as HTMLSpanElement | null;
-    toppSlider = document.getElementById('topp-slider') as HTMLInputElement | null;
-    toppValue = document.getElementById('topp-value') as HTMLSpanElement | null;
-    maxTokensSlider = document.getElementById('max-tokens-slider') as HTMLInputElement | null;
-    maxTokensValue = document.getElementById('max-tokens-value') as HTMLSpanElement | null;
+    activePKBContainer = document.getElementById('active-pkb-container');
+    activePKBHeader = document.getElementById('active-pkb-header');
+    activePKBList = document.getElementById('active-pkb-list');
+    tokenWarning = document.getElementById('token-warning');
+    invokePKBBtn = document.getElementById('invoke-pkb-btn');
+
+    
+    // New Toggles
     autoCreateTitleToggle = document.getElementById('auto-create-title-toggle') as HTMLInputElement;
-    streamingOutputToggle = document.getElementById('streaming-output-toggle') as HTMLInputElement;
+    chatShowWordCountToggle = document.getElementById('chat-show-word-count-toggle') as HTMLInputElement;
+    chatShowCharCountToggle = document.getElementById('chat-show-char-count-toggle') as HTMLInputElement;
+    chatShowModelNameToggle = document.getElementById('chat-show-model-name-toggle') as HTMLInputElement;
+    chatShowTimestampsToggle = document.getElementById('chat-show-timestamps-toggle') as HTMLInputElement;
+    chatAutoHideCodeBlocksToggle = document.getElementById('chat-auto-hide-code-blocks-toggle') as HTMLInputElement;
+    chatEnableSpellcheckToggle = document.getElementById('chat-enable-spellcheck-toggle') as HTMLInputElement;
+    chatDisplayMarkdownToggle = document.getElementById('chat-display-markdown-toggle') as HTMLInputElement;
+    chatDisplayMermaidToggle = document.getElementById('chat-display-mermaid-toggle') as HTMLInputElement;
+
+    // Model Param Sliders
+    temperatureSlider = document.getElementById('chat-temperature-slider') as HTMLInputElement;
+    temperatureValue = document.getElementById('chat-temperature-value') as HTMLSpanElement;
+    topPSlider = document.getElementById('chat-topp-slider') as HTMLInputElement;
+    topPValue = document.getElementById('chat-topp-value') as HTMLSpanElement;
+    topKSlider = document.getElementById('chat-topk-slider') as HTMLInputElement;
+    topKValue = document.getElementById('chat-topk-value') as HTMLSpanElement;
+
+
+    // Initialize Mermaid
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: appSettings.theme === 'dark' ? 'dark' : 'default',
+      securityLevel: 'loose',
+      fontFamily: 'inherit'
+    });
 
     loadChatHistory();
     initChatSettings();
@@ -646,6 +821,10 @@ export function initChatModule() {
         if ((e.target as HTMLElement).closest('#system-instruction-header')) {
             systemInstructionContainer.classList.toggle('open');
         }
+    });
+
+    activePKBHeader?.addEventListener('click', () => {
+        activePKBContainer?.classList.toggle('open');
     });
 
     recordBtn?.addEventListener('click', handleVoiceRecording);

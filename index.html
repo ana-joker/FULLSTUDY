@@ -18,7 +18,8 @@
     "pdfjs-dist": "https://esm.sh/pdfjs-dist@4.4.168",
     "mammoth": "https://esm.sh/mammoth@^1.8.0",
     "path": "https://esm.sh/path@^0.12.7",
-    "vite": "https://esm.sh/vite@^7.0.6"
+    "vite": "https://esm.sh/vite@^7.0.6",
+    "mermaid": "https://esm.sh/mermaid@10.9.1"
   }
 }
 </script>
@@ -52,6 +53,11 @@
                 <h2 data-i18n-key="quizHubTitle">Quiz Hub</h2>
                 <p data-i18n-key="quizHubDescription">Generate custom quizzes from text, documents, or images to test your knowledge.</p>
             </div>
+             <div class="hub-card" id="navigate-to-pkb">
+                <div class="hub-card-icon">📚</div>
+                <h2 data-i18n-key="pkbHubTitle">Knowledge Bases</h2>
+                <p data-i18n-key="pkbHubDescription">Create and manage personal knowledge bases for a customized AI experience.</p>
+            </div>
         </div>
     </div>
     
@@ -64,6 +70,13 @@
             </div>
             <button id="new-chat-btn" class="new-chat-button" data-i18n-key="newChat">New Chat +</button>
             <div id="chat-list"></div>
+            <div id="active-pkb-container" class="pkb-sidebar-container" style="display: none;">
+                <h3 id="active-pkb-header">
+                    <span data-i18n-key="activePKBs">Active Knowledge Bases</span>
+                    <span class="chevron">▼</span>
+                </h3>
+                <div id="active-pkb-list"></div>
+            </div>
         </div>
         <div id="chat-main-content">
             <div id="chat-main-header">
@@ -93,7 +106,9 @@
             </div>
             <div id="chat-input-container">
                 <div id="chat-file-preview-container"></div>
+                 <p id="token-warning" class="error-message" style="display: none; margin-bottom: 5px;"></p>
                 <div class="chat-input-row">
+                    <button id="invoke-pkb-btn" class="chat-action-btn" aria-label="Invoke Knowledge Base" data-i18n-key="invokePKB" title="Invoke Knowledge Base">📚</button>
                     <textarea id="chat-input" rows="1" placeholder="Type a message, or upload a file..."></textarea>
                     <label for="chat-file-input" class="chat-action-btn" aria-label="Attach file">📎</label>
                     <input type="file" id="chat-file-input" class="visually-hidden" accept=".txt,.md,.pdf,.docx,image/*">
@@ -106,45 +121,79 @@
                  </div>
             </div>
         </div>
-         <!-- CHAT SETTINGS POPOVER -->
+        <!-- CHAT SETTINGS POPOVER (NEW from user image) -->
         <div id="chat-settings-popover" class="popover" style="display: none;">
             <div class="popover-content">
+                <h3 data-i18n-key="chatSettingsTitle">Chat Settings</h3>
+                <!-- Display Section -->
                 <div class="setting-section">
-                    <h3 data-i18n-key="modelParameters">Model Parameters</h3>
-                    <div class="setting-option">
-                        <label for="temperature-slider">Temperature: <span id="temperature-value">0.5</span></label>
-                        <input type="range" id="temperature-slider" min="0" max="1" step="0.1" value="0.5" class="slider-input">
-                    </div>
-                    <div class="setting-option">
-                        <label for="topk-slider">Top-K: <span id="topk-value">32</span></label>
-                        <input type="range" id="topk-slider" min="1" max="100" step="1" value="32" class="slider-input">
-                    </div>
-                     <div class="setting-option">
-                        <label for="topp-slider">Top-P: <span id="topp-value">0.95</span></label>
-                        <input type="range" id="topp-slider" min="0" max="1" step="0.05" value="0.95" class="slider-input">
-                    </div>
-                     <div class="setting-option">
-                        <label for="max-tokens-slider">Max Output Tokens: <span id="max-tokens-value">8192</span></label>
-                        <input type="range" id="max-tokens-slider" min="128" max="100000" step="512" value="8192" class="slider-input">
-                    </div>
-                </div>
-                 <div class="setting-section">
-                    <h3 data-i18n-key="settingsChatBehavior">Behavior</h3>
-                     <div class="toggle-option">
-                        <label for="auto-create-title-toggle" data-i18n-key="autoCreateTitle">Auto Create Chat Titles</label>
-                        <label class="switch">
-                          <input type="checkbox" id="auto-create-title-toggle">
-                          <span class="slider round"></span>
-                        </label>
+                    <h4 data-i18n-key="chatSettingsDisplay">Display</h4>
+                    <div class="toggle-option">
+                        <label for="chat-show-word-count-toggle" data-i18n-key="chatShowWordCount">Show message word count</label>
+                        <label class="switch"><input type="checkbox" id="chat-show-word-count-toggle"><span class="slider round"></span></label>
                     </div>
                     <div class="toggle-option">
-                        <label for="streaming-output-toggle" data-i18n-key="streamingOutput">Streaming Output</label>
-                        <label class="switch">
-                          <input type="checkbox" id="streaming-output-toggle" checked>
-                          <span class="slider round"></span>
-                        </label>
+                        <label for="chat-show-char-count-toggle" data-i18n-key="chatShowCharCount">Show message character count</label>
+                        <label class="switch"><input type="checkbox" id="chat-show-char-count-toggle"><span class="slider round"></span></label>
                     </div>
-                 </div>
+                    <div class="toggle-option">
+                        <label for="chat-show-model-name-toggle" data-i18n-key="chatShowModelName">Show model name</label>
+                        <label class="switch"><input type="checkbox" id="chat-show-model-name-toggle"><span class="slider round"></span></label>
+                    </div>
+                    <div class="toggle-option">
+                        <label for="chat-show-timestamps-toggle" data-i18n-key="chatShowTimestamps">Show timestamp for message</label>
+                        <label class="switch"><input type="checkbox" id="chat-show-timestamps-toggle"><span class="slider round"></span></label>
+                    </div>
+                </div>
+                <!-- Functionality Section -->
+                <div class="setting-section">
+                    <h4 data-i18n-key="chatSettingsFunctionality">Functionality</h4>
+                    <div class="toggle-option">
+                        <label for="chat-auto-hide-code-blocks-toggle" data-i18n-key="chatAutoHideCodeBlocks">Automatically hide code blocks</label>
+                        <label class="switch"><input type="checkbox" id="chat-auto-hide-code-blocks-toggle"><span class="slider round"></span></label>
+                    </div>
+                    <div class="toggle-option">
+                        <label for="auto-create-title-toggle" data-i18n-key="autoCreateTitle">Automatically create chat titles</label>
+                        <label class="switch"><input type="checkbox" id="auto-create-title-toggle"><span class="slider round"></span></label>
+                    </div>
+                    <div class="toggle-option">
+                        <label for="chat-enable-spellcheck-toggle" data-i18n-key="chatEnableSpellcheck">Spell check</label>
+                        <label class="switch"><input type="checkbox" id="chat-enable-spellcheck-toggle"><span class="slider round"></span></label>
+                    </div>
+                    <div class="toggle-option">
+                        <label for="chat-display-markdown-toggle" data-i18n-key="chatDisplayMarkdown">Display Markdown</label>
+                        <label class="switch"><input type="checkbox" id="chat-display-markdown-toggle"><span class="slider round"></span></label>
+                    </div>
+                    <div class="toggle-option">
+                        <label for="chat-display-mermaid-toggle" data-i18n-key="chatDisplayMermaid">Display Mermaid diagrams</label>
+                        <label class="switch"><input type="checkbox" id="chat-display-mermaid-toggle"><span class="slider round"></span></label>
+                    </div>
+                </div>
+                <!-- Model Parameters Section -->
+                <div class="setting-section">
+                    <h4 data-i18n-key="modelParameters">Model Parameters</h4>
+                    <div class="setting-option">
+                      <div class="slider-label-group">
+                          <label for="chat-temperature-slider" data-i18n-key="temperature">Temperature</label>
+                          <span id="chat-temperature-value">0.7</span>
+                      </div>
+                      <input type="range" id="chat-temperature-slider" class="slider-input" min="0" max="1" step="0.1">
+                    </div>
+                    <div class="setting-option">
+                       <div class="slider-label-group">
+                            <label for="chat-topp-slider" data-i18n-key="topP">Top-P</label>
+                            <span id="chat-topp-value">0.95</span>
+                        </div>
+                      <input type="range" id="chat-topp-slider" class="slider-input" min="0" max="1" step="0.05">
+                    </div>
+                    <div class="setting-option">
+                        <div class="slider-label-group">
+                            <label for="chat-topk-slider" data-i18n-key="topK">Top-K</label>
+                            <span id="chat-topk-value">40</span>
+                        </div>
+                      <input type="range" id="chat-topk-slider" class="slider-input" min="1" max="100" step="1">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -267,6 +316,53 @@
             <button id="cancel-btn" class="secondary-btn" data-i18n-key="cancel">Cancel</button>
           </div>
           <p id="error-message" class="error-message" style="display: none;"></p>
+        </div>
+    </div>
+
+    <!-- PKB MANAGER PAGE -->
+    <div id="pkb-manager-page" class="page">
+        <header class="app-header">
+             <div class="app-header-actions">
+                <button class="header-btn back-to-home-btn" data-i18n-key="backToHome">Back</button>
+             </div>
+             <div class="app-header-content">
+                <h1 data-i18n-key="pkbManagerTitle">Knowledge Base Manager</h1>
+             </div>
+             <div class="app-header-actions">
+                 <button id="create-new-pkb-btn" class="header-btn" data-i18n-key="pkbCreateNew">Create New</button>
+             </div>
+        </header>
+        <div class="pkb-main-view">
+            <div id="pkb-list-view">
+                <div id="pkb-list-container">
+                    <!-- List of PKBs will be rendered here -->
+                </div>
+                 <p id="no-pkb-message" class="no-history-message" style="display: none;" data-i18n-key="pkbNoBases">No knowledge bases found. Create one to get started!</p>
+            </div>
+            <div id="pkb-detail-view" style="display: none;">
+                <h2 id="pkb-detail-title"></h2>
+                <p id="pkb-detail-description"></p>
+                <div class="pkb-item-form">
+                    <h3 data-i18n-key="pkbAddItem">Add Item</h3>
+                    <textarea id="pkb-item-description-input" rows="2" placeholder="Describe this item... (e.g., 'This is my resume', 'A picture of my cat, Fluffy')"></textarea>
+                    <div class="file-inputs-container">
+                        <div class="file-input-area">
+                            <input type="file" id="pkb-item-file-input" class="visually-hidden" accept=".txt,.md,.pdf,.docx,image/*">
+                            <label for="pkb-item-file-input" class="button-like-label" data-i18n-key="pkbAddFileOrImage">Add File or Image</label>
+                            <div id="pkb-file-name-display" class="file-name-display" style="display: none;">
+                                <span id="pkb-file-name"></span>
+                                <button id="pkb-remove-file-btn" class="remove-file-btn">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="add-pkb-item-btn" data-i18n-key="pkbAddItemAction">Add Item to Knowledge Base</button>
+                </div>
+                <hr>
+                <h3 data-i18n-key="pkbItems">Items</h3>
+                <div id="pkb-item-list">
+                    <!-- Items in the selected PKB will be rendered here -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -444,6 +540,39 @@
             <p id="learn-more-error" class="error-message" style="display: none;"></p>
             <div id="learn-more-content"></div>
             <button id="learn-more-close-btn" class="secondary-btn" data-i18n-key="close">Close</button>
+        </div>
+    </div>
+
+    <!-- PKB MODALS -->
+    <div id="pkb-create-modal" class="modal-container">
+        <div class="modal-content">
+            <h2 data-i18n-key="pkbCreateTitle">Create Knowledge Base</h2>
+            <div class="setting-option">
+                <label for="pkb-name-input" data-i18n-key="pkbNameLabel">Name</label>
+                <input type="text" id="pkb-name-input" placeholder="e.g., My Project Research, Family Photos">
+            </div>
+            <div class="setting-option">
+                 <label for="pkb-description-input" data-i18n-key="pkbDescriptionLabel">Description</label>
+                 <textarea id="pkb-description-input" rows="3" placeholder="A brief description of this knowledge base."></textarea>
+            </div>
+            <div class="button-group">
+                <button id="save-pkb-btn" data-i18n-key="save">Save</button>
+                <button id="cancel-pkb-creation-btn" class="secondary-btn" data-i18n-key="cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="pkb-select-modal" class="modal-container">
+        <div class="modal-content">
+            <h2 data-i18n-key="pkbSelectTitle">Activate Knowledge Bases</h2>
+            <p class="setting-description" data-i18n-key="pkbSelectDescription">Select one or more bases to include in the chat context.</p>
+            <div id="pkb-selection-list" class="pkb-selection-list">
+                <!-- Checkbox list of PKBs will be rendered here -->
+            </div>
+            <div class="button-group">
+                <button id="activate-pkbs-btn" data-i18n-key="pkbActivate">Activate</button>
+                <button id="cancel-pkb-selection-btn" class="secondary-btn" data-i18n-key="cancel">Cancel</button>
+            </div>
         </div>
     </div>
 
